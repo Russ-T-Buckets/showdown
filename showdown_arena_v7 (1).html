@@ -1,0 +1,3993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Showdown Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1923;--surface:#1a2535;--surface2:#243040;--border:#2e4060;
+  --text:#e8edf2;--dim:#7a92a8;--accent:#3b82f6;--gold:#f59e0b;
+  --red:#ef4444;--green:#22c55e;
+  --team-primary:#3b82f6;--team-secondary:#1e3a5f;--team-accent:#f59e0b;
+  --ui-font:'Barlow Condensed',sans-serif;
+  --num-font:'Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:var(--ui-font);min-height:100vh;transition:background .4s}
+input,select{background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--ui-font);font-size:14px;padding:7px 9px;width:100%}
+select option{background:var(--bg)}
+button{cursor:pointer;font-family:var(--ui-font)}
+
+/* ── SETUP ── */
+.screen{display:none;padding:12px;flex-direction:column;gap:10px}
+.screen.active{display:flex}
+.setup-title{font-size:26px;font-weight:800;color:var(--gold);letter-spacing:3px;text-align:center;padding:8px 0 4px;text-transform:uppercase}
+.setup-sub{font-size:11px;font-weight:600;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:2px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fl{font-size:10px;font-weight:600;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px}
+.primary-btn{background:var(--team-primary);border:none;border-radius:8px;color:#fff;font-family:var(--ui-font);font-size:18px;font-weight:700;padding:13px;letter-spacing:2px;text-transform:uppercase;width:100%;transition:filter .15s}
+.primary-btn:active{filter:brightness(1.2)}
+.secondary-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--ui-font);font-size:14px;padding:10px;width:100%}
+
+/* ── SCOREBUG ── */
+#game-bug{
+  background:#080d14;
+  border-bottom:2px solid var(--team-primary);
+  box-shadow:0 2px 12px rgba(0,0,0,.5);
+  padding:6px 10px;display:none;
+  align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100
+}
+.team-score{display:flex;flex-direction:column;align-items:center;min-width:72px}
+.team-abbr{font-family:var(--ui-font);font-size:11px;font-weight:700;color:var(--dim);letter-spacing:2px;text-transform:uppercase}
+.score-num{
+  font-family:var(--num-font);font-size:32px;font-weight:700;line-height:1;
+  text-shadow:0 0 18px var(--team-primary);
+}
+.team-rec{font-family:var(--ui-font);font-size:9px;color:var(--dim)}
+.game-center{display:flex;flex-direction:column;align-items:center;gap:3px}
+.inning-disp{font-family:var(--ui-font);font-size:16px;font-weight:800;color:var(--team-primary);letter-spacing:1px}
+.outs-row{display:flex;gap:5px}
+.out-dot{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--dim);transition:background .12s,box-shadow .12s}
+.out-dot.on{background:var(--gold);border-color:var(--gold);box-shadow:0 0 6px var(--gold)}
+
+/* ── GAME SCREEN CARDS ── */
+#game-screen{padding:7px;gap:6px}
+.bug-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:7px 10px}
+.bug-title{font-family:var(--ui-font);font-size:10px;font-weight:700;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:3px}
+.bug-name{font-family:var(--ui-font);font-size:15px;font-weight:800;color:var(--gold);margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
+.stat-row{display:flex;gap:10px;flex-wrap:wrap}
+.si{display:flex;flex-direction:column;align-items:center;min-width:30px}
+.sl{font-family:var(--ui-font);font-size:9px;font-weight:600;color:var(--dim);letter-spacing:1px;text-transform:uppercase}
+.sv{font-family:var(--num-font);font-size:14px;font-weight:700}
+.ab-log{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;min-height:20px}
+.ab-chip{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-family:var(--num-font);font-size:11px;font-weight:700}
+.chip-k{color:var(--red)}.chip-bb{color:var(--accent)}.chip-hr{color:var(--gold)}.chip-hit{color:var(--green)}.chip-out{color:var(--dim)}.chip-sb{color:#a78bfa}
+.season-line{font-family:var(--ui-font);font-size:10px;color:var(--dim);margin-top:5px;line-height:1.8}
+.season-line span{font-family:var(--num-font);color:var(--text)}
+.game-line{font-family:var(--num-font);font-size:11px;color:var(--team-accent);font-weight:700;margin-bottom:3px}
+
+/* ── MATCHUP BAR ── */
+#matchup-bar{
+  background:linear-gradient(135deg,var(--team-secondary) 0%,var(--surface2) 100%);
+  border:1px solid var(--border);border-radius:9px;
+  padding:6px 11px;display:flex;justify-content:space-between;align-items:center
+}
+.mb-side{display:flex;flex-direction:column;gap:1px}
+.mb-role{font-family:var(--ui-font);font-size:9px;font-weight:600;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase}
+.mb-name{font-family:var(--ui-font);font-size:15px;font-weight:700}
+
+/* ── DIAMOND ── */
+#diamond-wrap{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:9px;padding:7px;
+  display:flex;flex-direction:column;align-items:center;gap:6px
+}
+#dsv{width:168px;height:168px}
+.ctrl-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.ctrl-btn{
+  background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  color:var(--dim);font-family:var(--ui-font);font-size:11px;font-weight:600;
+  padding:5px 10px;letter-spacing:.5px;text-transform:uppercase
+}
+.ctrl-btn.danger{border-color:var(--red);color:var(--red)}
+.ctrl-btn.sb{border-color:#a78bfa;color:#a78bfa;font-weight:700}
+
+/* ── OUTCOME BUTTONS ── */
+#outcome-panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px}
+.btn-row{display:flex;gap:5px}
+.ob{
+  flex:1;padding:13px 4px;border-radius:7px;border:none;
+  font-family:var(--ui-font);font-weight:700;font-size:17px;
+  transition:transform .08s,filter .08s,box-shadow .08s;
+  letter-spacing:.5px;text-transform:uppercase
+}
+.ob-sb{background:#1a0f2e;color:#a78bfa;border:1px solid #5b21b6;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.ob-cs{background:#2d0a0a;color:#f87171;border:1px solid #7f1d1d;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.ob:active{transform:scale(.93);filter:brightness(1.3)}
+/* Outs group */
+.ob-k{background:#2d0a0a;color:#f87171;border:1px solid #7f1d1d;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.ob-gb{background:#0e1f0e;color:#86efac;border:1px solid #166534;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.ob-fb{background:#0e1f0e;color:#86efac;border:1px solid #166534;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.ob-dp{background:#1f0a0a;color:#f87171;border:1px solid #7f1d1d;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.ob-sac{background:#1a1a1a;color:#94a3b8;border:1px solid #334155;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+/* On-base */
+.ob-bb{background:#0a1628;color:#93c5fd;border:1px solid #1e3a5f;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+/* Hits group */
+.ob-1b{background:#0d2010;color:#4ade80;border:1px solid #166534;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.ob-2b{background:#0d2010;color:#4ade80;border:1px solid #166534;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.ob-3b{background:#0d2010;color:#4ade80;border:1px solid #166534;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.ob-hr{background:#2a1400;color:#fbbf24;border:1px solid #92400e;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 0 8px rgba(251,191,36,.15)}
+
+/* ── PLAY DESCRIPTOR ── */
+#play-descriptor{
+  background:var(--surface);
+  border:none;
+  border-left:3px solid var(--team-primary);
+  border-radius:0 8px 8px 0;
+  padding:7px 11px;
+  font-family:'Barlow',sans-serif;
+  font-size:12px;font-style:italic;
+  color:var(--text);line-height:1.5;
+  display:none;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.04)
+}
+
+/* ── K SIGN BOARD ── */
+#k-sign-board{background:#06020a;border:1px solid #3b0f0f;border-radius:10px;padding:8px 12px;display:none}
+
+/* ── DECISION MODAL ── */
+#decision-modal{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:flex-end;justify-content:center;z-index:9999;padding:0 12px 30px}
+.decision-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;width:100%;max-width:380px}
+.decision-title{font-family:var(--ui-font);font-size:15px;font-weight:700;color:var(--gold);margin-bottom:12px;text-align:center;text-transform:uppercase;letter-spacing:1px}
+.decision-btns{display:flex;flex-direction:column;gap:8px}
+.d-btn{border:none;border-radius:8px;font-family:var(--ui-font);font-weight:700;font-size:16px;padding:14px;width:100%;letter-spacing:.5px}
+.d-green{background:#166534;color:#4ade80}
+.d-red{background:#7f1d1d;color:#f87171}
+.d-blue{background:#1e3a5f;color:#93c5fd}
+.d-gray{background:var(--surface2);color:var(--dim);border:1px solid var(--border)}
+
+/* ── ADMIN MODAL ── */
+#admin-modal{position:fixed;inset:0;background:rgba(0,0,0,.87);display:none;align-items:center;justify-content:center;z-index:999;padding:14px}
+.admin-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:10px;max-height:90vh;overflow-y:auto}
+.admin-title{font-family:var(--ui-font);font-size:16px;font-weight:800;color:var(--red);text-transform:uppercase;letter-spacing:1px}
+.base-toggles{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.btog{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--dim);font-family:var(--ui-font);font-size:14px;font-weight:600;padding:10px;text-align:center;text-transform:uppercase;letter-spacing:1px}
+.btog.on{background:#3d3000;border-color:var(--gold);color:var(--gold)}
+.adj-row{display:flex;gap:8px;align-items:center}
+.adj-btn{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--num-font);font-size:18px;padding:5px 13px}
+.adj-label{flex:1;text-align:center;font-family:var(--ui-font);font-size:14px;font-weight:600}
+.score-adj{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sai{display:flex;flex-direction:column;gap:4px;align-items:center}
+.next-btn{background:#166534;border:none;border-radius:8px;color:#fff;font-family:var(--ui-font);font-size:14px;font-weight:700;padding:10px;width:100%;text-transform:uppercase;letter-spacing:1px}
+.done-btn{background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:var(--ui-font);font-size:16px;font-weight:700;padding:10px;width:100%;text-transform:uppercase;letter-spacing:1px}
+.inline-row{display:flex;gap:6px}
+.inline-row input{flex:1}
+.small-btn{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--ui-font);font-size:12px;font-weight:600;padding:7px 10px;white-space:nowrap;text-transform:uppercase}
+
+/* ── PITCHER DECISION ── */
+.pitcher-dec-row{display:flex;align-items:center;gap:6px;background:var(--surface2);border-radius:6px;padding:7px 8px}
+.pitcher-dec-name{flex:1;font-family:var(--ui-font);font-size:13px;font-weight:600;color:var(--text)}
+.pitcher-dec-ip{font-family:var(--num-font);font-size:10px;color:var(--dim);min-width:28px}
+.dec-tog{border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--dim);font-family:var(--ui-font);font-size:12px;font-weight:700;padding:4px 8px;cursor:pointer;text-transform:uppercase}
+.dec-tog.w-on{background:#166534;border-color:#4ade80;color:#4ade80}
+.dec-tog.l-on{background:#7f1d1d;border-color:#f87171;color:#f87171}
+.dec-tog.sv-on{background:#1e3a5f;border-color:#93c5fd;color:#93c5fd}
+
+/* ── GAME LOG ── */
+#game-log-wrap{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:8px}
+.log-entry{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px}
+.log-entry:last-child{border-bottom:none}
+.log-num{font-family:var(--num-font);color:var(--dim);min-width:20px;font-size:10px;padding-top:1px}
+.log-badge{border-radius:4px;padding:2px 6px;font-family:var(--num-font);font-size:10px;font-weight:700;min-width:28px;text-align:center;flex-shrink:0}
+.log-text{flex:1;font-family:var(--ui-font);font-size:12px;color:var(--dim);line-height:1.4}
+.log-batter{color:var(--text);font-weight:700}
+.log-undo{background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--dim);font-family:var(--ui-font);font-size:9px;font-weight:600;padding:2px 6px;flex-shrink:0;text-transform:uppercase}
+.log-undo:active{background:var(--red);border-color:var(--red);color:#fff}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--gold);color:#000;font-family:var(--ui-font);font-size:13px;font-weight:700;padding:8px 18px;border-radius:20px;display:none;z-index:9999;letter-spacing:.5px;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen" class="screen active">
+  <div class="setup-title">⚾ SHOWDOWN ARENA</div>
+
+  <!-- LEAGUE RULES -->
+  <div class="card" id="rules-card" style="border-color:#2e4060">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="setup-sub" style="margin-bottom:0">2000 Showdown League</div>
+      <button onclick="toggleRules()" id="rules-toggle" style="background:transparent;border:none;color:var(--dim);font-family:var(--ui-font);font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0">SHOW ▾</button>
+    </div>
+    <div id="rules-body" style="display:none;flex-direction:column;gap:10px;padding-top:4px">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center">
+        <div style="background:var(--surface2);border-radius:8px;padding:8px 4px">
+          <div style="font-family:var(--num-font);font-size:22px;font-weight:700;color:var(--gold)">81</div>
+          <div style="font-family:var(--ui-font);font-size:9px;font-weight:600;color:var(--dim);letter-spacing:1px;text-transform:uppercase">Games</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:8px 4px">
+          <div style="font-family:var(--num-font);font-size:22px;font-weight:700;color:var(--gold)">30</div>
+          <div style="font-family:var(--ui-font);font-size:9px;font-weight:600;color:var(--dim);letter-spacing:1px;text-transform:uppercase">Teams</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:8px 4px">
+          <div style="font-family:var(--num-font);font-size:22px;font-weight:700;color:var(--gold)">6</div>
+          <div style="font-family:var(--ui-font);font-size:9px;font-weight:600;color:var(--dim);letter-spacing:1px;text-transform:uppercase">Divisions</div>
+        </div>
+      </div>
+
+      <div style="font-family:var(--ui-font);font-size:11px;color:var(--dim);line-height:1.7;border-top:1px solid var(--border);padding-top:8px">
+        <div style="color:var(--text);font-weight:700;font-size:12px;margin-bottom:3px">📅 Schedule</div>
+        Each team plays <b style="color:var(--text)">12 games</b> vs each division rival (four 3-game series) and <b style="color:var(--text)">3 games</b> vs a selection of non-division opponents — 48 division + 33 cross-division = 81 total.
+      </div>
+
+      <div style="font-family:var(--ui-font);font-size:11px;color:var(--dim);line-height:1.7;border-top:1px solid var(--border);padding-top:8px">
+        <div style="color:var(--text);font-weight:700;font-size:12px;margin-bottom:3px">⚾ Pitching</div>
+        Each series uses a pre-set pitching script locked to G1, G2, or G3. Starters pitch their scripted innings — no mid-game decisions. Assign W/L/SV at the end of each game.
+      </div>
+
+      <div style="font-family:var(--ui-font);font-size:11px;color:var(--dim);line-height:1.7;border-top:1px solid var(--border);padding-top:8px">
+        <div style="color:var(--text);font-weight:700;font-size:12px;margin-bottom:3px">🏃 Base Running</div>
+        Speed ratings: <b style="color:#4ade80">A</b> (fast) · <b style="color:var(--gold)">B</b> (average) · <b style="color:#f87171">C</b> (slow). Speed A runners score from 2nd on a single. Stolen bases: 2nd base only — click SB 2B and choose safe or caught.
+      </div>
+
+      <div style="font-family:var(--ui-font);font-size:11px;color:var(--dim);line-height:1.7;border-top:1px solid var(--border);padding-top:8px">
+        <div style="color:var(--text);font-weight:700;font-size:12px;margin-bottom:3px">🧤 Fielding</div>
+        Each player has a fielding rating. Catchers range 2–11, infielders 0–5, outfielders 0–3. The defensive team's C / IF / OF totals show in the scorebug during play. Higher = better range and arm.
+      </div>
+
+      <div style="font-family:var(--ui-font);font-size:11px;color:var(--dim);line-height:1.7;border-top:1px solid var(--border);padding-top:8px">
+        <div style="color:var(--text);font-weight:700;font-size:12px;margin-bottom:3px">🔢 Key Rules</div>
+        <div style="display:flex;flex-direction:column;gap:4px;margin-top:2px">
+          <div>· <b style="color:var(--text)">HR:</b> batter and all runners score. Bases clear.</div>
+          <div>· <b style="color:var(--text)">3B:</b> all runners score. Batter to 3rd.</div>
+          <div>· <b style="color:var(--text)">2B:</b> runners on 2nd/3rd score. Runner on 1st to 3rd. Batter to 2nd.</div>
+          <div>· <b style="color:var(--text)">1B:</b> runner on 3rd scores. Others advance one base. Speed A runner on 2nd also scores.</div>
+          <div>· <b style="color:var(--text)">BB:</b> only forced runners advance (chain from 1st). Unforced runners hold.</div>
+          <div>· <b style="color:var(--text)">GB &lt;2 outs:</b> all runners advance one base, batter out at 1st.</div>
+          <div>· <b style="color:var(--text)">GB 2 outs:</b> runners hold, batter out.</div>
+          <div>· <b style="color:var(--text)">FB:</b> runners hold. If runner on 3rd and &lt;2 outs, SAC fly popup appears.</div>
+          <div>· <b style="color:var(--text)">SAC:</b> requires runner on 3rd, &lt;2 outs. Batter always out. If runner thrown out at home, 2 outs recorded.</div>
+          <div>· <b style="color:var(--text)">DP:</b> requires runner on 1st, &lt;2 outs. 2 outs recorded — batter + one runner.</div>
+          <div>· <b style="color:var(--text)">SB:</b> 2nd base only, no stealing 3rd or home.</div>
+          <div>· <b style="color:#a78bfa">Speed A on 1st:</b> must attempt steal of 2nd when open.</div>
+          <div>· <b style="color:#a78bfa">Speed A on 2nd:</b> scores on a single automatically.</div>
+          <div>· <b style="color:var(--text)">Walkoff:</b> home team takes lead in bottom 9th or later — game ends immediately.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="setup-sub">Schedule Game #</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="game-num-input" type="number" min="1" max="1215" placeholder="1–1215" style="font-size:22px;font-weight:700;text-align:center;padding:10px" oninput="lookupGame()">
+    </div>
+    <div id="game-lookup-result" style="font-size:12px;color:var(--dim);line-height:2;min-height:40px"></div>
+  </div>
+  </div>
+  <!-- SERIES TRACKER on setup -->
+  <div class="card" id="series-card" style="display:none">
+    <div class="setup-sub">Series</div>
+    <div id="series-display" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div style="text-align:center;flex:1">
+        <div id="sd-away-abbr" style="font-size:11px;color:var(--dim);letter-spacing:1px"></div>
+        <div id="sd-away-wins" style="font-size:32px;font-weight:700"></div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:10px;color:var(--dim)">SERIES</div>
+        <div id="sd-game-label" style="font-size:11px;color:var(--gold);font-weight:700"></div>
+      </div>
+      <div style="text-align:center;flex:1">
+        <div id="sd-home-abbr" style="font-size:11px;color:var(--dim);letter-spacing:1px"></div>
+        <div id="sd-home-wins" style="font-size:32px;font-weight:700"></div>
+      </div>
+    </div>
+    <div id="sd-prev-results" style="font-size:10px;color:var(--dim);text-align:center;margin-top:2px"></div>
+  </div>
+  <div class="card" id="records-card" style="display:none">
+    <div class="setup-sub">Team Records</div>
+    <div class="two-col">
+      <div><div class="fl" id="away-rec-lbl">Away W-L</div><input id="away-rec" value="0-0" maxlength="8"></div>
+      <div><div class="fl">Away Rank</div><input id="away-rank" value="1st" maxlength="6"></div>
+    </div>
+    <div class="two-col">
+      <div><div class="fl" id="home-rec-lbl">Home W-L</div><input id="home-rec" value="0-0" maxlength="8"></div>
+      <div><div class="fl">Home Rank</div><input id="home-rank" value="1st" maxlength="6"></div>
+    </div>
+  </div>
+  <button class="primary-btn" id="play-btn" style="display:none" onclick="startGame()">PLAY BALL ▶</button>
+
+  <!-- SCHEDULE CONTEXT -->
+  <div class="card" id="sched-context-card" style="display:none">
+    <div class="setup-sub">Schedule</div>
+    <div id="sched-context-rows" style="display:flex;flex-direction:column;gap:1px"></div>
+  </div>
+</div>
+
+<!-- STICKY SCOREBUG -->
+<div id="game-bug">
+  <div class="team-score">
+    <div class="team-abbr" id="bug-away">AWY</div>
+    <div class="score-num" id="bug-away-score">0</div>
+    <div class="team-rec" id="bug-away-rec">0-0</div>
+  </div>
+  <div class="game-center">
+    <div class="inning-disp" id="bug-inning">▲ 1</div>
+    <div class="outs-row">
+      <div class="out-dot" id="dot1"></div>
+      <div class="out-dot" id="dot2"></div>
+    </div>
+    <div id="k-signs" style="display:flex;gap:2px;margin-top:1px;min-height:10px;justify-content:center"></div>
+    <div id="bug-series" style="font-size:8px;color:var(--gold);letter-spacing:.5px;margin-top:1px"></div>
+  </div>
+  <div class="team-score">
+    <div class="team-abbr" id="bug-home">HME</div>
+    <div class="score-num" id="bug-home-score">0</div>
+    <div class="team-rec" id="bug-home-rec">0-0</div>
+  </div>
+</div>
+
+<!-- WALKOFF OVERLAY -->
+<div id="walkoff-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:9998;flex-direction:column;gap:16px;padding:20px;text-align:center">
+  <div id="walkoff-emoji" style="font-size:60px">🎉</div>
+  <div id="walkoff-headline" style="font-size:22px;font-weight:700;color:var(--gold);letter-spacing:1px;line-height:1.3"></div>
+  <div id="walkoff-desc" style="font-size:13px;color:var(--text);font-style:italic;max-width:300px;line-height:1.6"></div>
+  <div id="walkoff-score" style="font-size:18px;font-weight:700;color:var(--text);margin-top:4px"></div>
+  <button onclick="dismissWalkoff()" style="background:var(--team-primary);border:none;border-radius:8px;color:#fff;font-family:'Courier New',monospace;font-size:14px;font-weight:700;padding:12px 24px;margin-top:8px;letter-spacing:1px">LOG GAME →</button>
+</div>
+<div id="game-screen" class="screen">
+
+  <div id="matchup-bar">
+    <div class="mb-side">
+      <div class="mb-role">Pitching</div>
+      <div class="mb-name" style="color:#60a5fa" id="mb-pitcher">—</div>
+    </div>
+    <div style="color:var(--dim);font-size:12px">vs</div>
+    <div class="mb-side" style="align-items:flex-end">
+      <div class="mb-role">Batting</div>
+      <div class="mb-name" style="color:var(--team-accent)" id="mb-batter">—</div>
+    </div>
+  </div>
+
+  <!-- PITCHER BUG -->
+  <div class="bug-card" id="pitcher-bug-card">
+    <div class="bug-title">Pitcher</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+      <div class="bug-name" style="margin-bottom:0" id="p-name">—</div>
+      <div id="p-overlimit-badge" style="display:none;background:#7f1d1d;border:1px solid #f87171;border-radius:4px;color:#f87171;font-family:var(--ui-font);font-size:9px;font-weight:700;padding:2px 6px;letter-spacing:1px;text-transform:uppercase;animation:pulse 1.5s infinite">⚠ OVER LIMIT</div>
+    </div>
+    <div class="stat-row">
+      <div class="si"><div class="sl">IP</div><div class="sv" id="p-ip">0.0</div></div>
+      <div class="si"><div class="sl">K</div><div class="sv" id="p-k">0</div></div>
+      <div class="si"><div class="sl">H</div><div class="sv" id="p-h">0</div></div>
+      <div class="si"><div class="sl">BB</div><div class="sv" id="p-bb">0</div></div>
+      <div class="si"><div class="sl">HR</div><div class="sv" id="p-hr">0</div></div>
+      <div class="si"><div class="sl">ER</div><div class="sv" id="p-er">0</div></div>
+    </div>
+    <div class="season-line">SEASON · ERA <span id="p-era">—</span> · WHIP <span id="p-whip">—</span> · W-L <span id="p-wl">—</span> · HR <span id="p-hrs">—</span></div>
+  </div>
+
+  <!-- BATTER BUG -->
+  <div class="bug-card">
+    <div class="bug-title">Batter</div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">
+      <div class="bug-name" style="margin-bottom:0" id="b-name">—</div>
+      <div style="font-size:10px" id="b-slot-pos"></div>
+    </div>
+    <div class="game-line" id="b-game-line"></div>
+    <div class="ab-log" id="ab-log"><span style="color:var(--dim);font-size:11px">No ABs yet</span></div>
+    <div class="season-line">AVG <span id="b-avg">—</span> · HR <span id="b-hr">—</span> · RBI <span id="b-rbi">—</span> · R <span id="b-r">—</span> · SB <span id="b-sb">—</span> · OBP <span id="b-obp">—</span> · OPS <span id="b-ops">—</span></div>
+    <div id="season-load-status" style="font-size:9px;color:var(--dim);margin-top:3px;display:none"></div>
+  </div>
+
+  <!-- DIAMOND + FIELDING OVERLAID -->
+  <div id="diamond-wrap">
+    <svg id="dsv" viewBox="0 0 210 210" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Grass stripe pattern -->
+        <pattern id="grass" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <rect width="8" height="8" fill="#1a4a2e"/>
+          <rect width="4" height="8" fill="#1e5233"/>
+        </pattern>
+        <!-- Infield dirt gradient -->
+        <radialGradient id="dirtGrad" cx="50%" cy="55%" r="50%">
+          <stop offset="0%" stop-color="#8a5c28"/>
+          <stop offset="100%" stop-color="#6b4520"/>
+        </radialGradient>
+        <!-- Warning track gradient -->
+        <radialGradient id="warnGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="80%" stop-color="transparent"/>
+          <stop offset="100%" stop-color="#5a3e1a" stop-opacity=".5"/>
+        </radialGradient>
+      </defs>
+
+      <!-- Outfield grass -->
+      <polygon points="105,15 190,100 105,185 20,100" fill="url(#grass)" stroke="none"/>
+      <!-- Warning track ring -->
+      <polygon points="105,15 190,100 105,185 20,100" fill="url(#warnGrad)"/>
+      <!-- Foul lines -->
+      <line x1="105" y1="178" x2="185" y2="98" stroke="#c8b86e" stroke-width=".8" stroke-dasharray="4,3" opacity=".4"/>
+      <line x1="105" y1="178" x2="25" y2="98" stroke="#c8b86e" stroke-width=".8" stroke-dasharray="4,3" opacity=".4"/>
+      <!-- Infield dirt -->
+      <polygon points="105,58 143,100 105,142 67,100" fill="url(#dirtGrad)" stroke="#a07850" stroke-width=".8"/>
+      <!-- Infield arc (grass cutout between bases) -->
+      <path d="M 132,97 A 38,38 0 0 1 78,97" fill="none" stroke="#2d6a4f" stroke-width="1.5" stroke-dasharray="none" opacity=".6"/>
+      <!-- Pitcher mound -->
+      <ellipse cx="105" cy="102" rx="7" ry="5" fill="#c9a96e" stroke="#a07850" stroke-width=".8"/>
+      <ellipse cx="105" cy="100" rx="5" ry="3.5" fill="#d4aa72"/>
+      <!-- Home plate -->
+      <polygon points="105,168 111,174 109,181 101,181 99,174" fill="white" opacity=".92"/>
+
+      <!-- Bases -->
+      <rect id="base1" x="132" y="88" width="17" height="17" rx="2" fill="#8b7355" stroke="#c8a06e" stroke-width="1"/>
+      <rect id="base2" x="96" y="52" width="17" height="17" rx="2" fill="#8b7355" stroke="#c8a06e" stroke-width="1"/>
+      <rect id="base3" x="61" y="88" width="17" height="17" rx="2" fill="#8b7355" stroke="#c8a06e" stroke-width="1"/>
+
+      <!-- Runner dots -->
+      <circle id="r1" cx="141" cy="77" r="9" fill="#f4d03f" stroke="#e6b800" stroke-width="1.5" opacity="0" filter="url(#runnerGlow)"/>
+      <circle id="r2" cx="105" cy="42" r="9" fill="#f4d03f" stroke="#e6b800" stroke-width="1.5" opacity="0"/>
+      <circle id="r3" cx="69" cy="77" r="9" fill="#f4d03f" stroke="#e6b800" stroke-width="1.5" opacity="0"/>
+      <text id="r1-spd" x="141" y="80" text-anchor="middle" fill="#1a1a00" font-size="8" font-weight="700" font-family="Courier New" opacity="0"></text>
+      <text id="r2-spd" x="105" y="45" text-anchor="middle" fill="#1a1a00" font-size="8" font-weight="700" font-family="Courier New" opacity="0"></text>
+      <text id="r3-spd" x="69" y="80" text-anchor="middle" fill="#1a1a00" font-size="8" font-weight="700" font-family="Courier New" opacity="0"></text>
+      <!-- Runner name labels -->
+      <text id="r1-name" x="141" y="91" text-anchor="middle" fill="#e8edf2" font-size="7" font-family="Courier New" opacity="0"></text>
+      <text id="r2-name" x="105" y="56" text-anchor="middle" fill="#e8edf2" font-size="7" font-family="Courier New" opacity="0"></text>
+      <text id="r3-name" x="69" y="91" text-anchor="middle" fill="#e8edf2" font-size="7" font-family="Courier New" opacity="0"></text>
+
+      <!-- Base labels -->
+      <text x="153" y="110" text-anchor="middle" fill="#c8a878" font-size="8" font-family="Barlow Condensed,sans-serif" font-weight="600">1B</text>
+      <text x="105" y="44" text-anchor="middle" fill="#c8a878" font-size="8" font-family="Barlow Condensed,sans-serif" font-weight="600">2B</text>
+      <text x="57" y="110" text-anchor="middle" fill="#c8a878" font-size="8" font-family="Barlow Condensed,sans-serif" font-weight="600">3B</text>
+      <text x="105" y="197" text-anchor="middle" fill="#c8a878" font-size="7" font-family="Barlow Condensed,sans-serif" font-weight="600">HOME</text>
+
+      <!-- Fielding scores on the field -->
+      <text id="fld-c"  x="105" y="192" text-anchor="middle" font-size="8" font-family="Barlow Condensed,sans-serif" font-weight="700" fill="#60a5fa" opacity="0"></text>
+      <text id="fld-if" x="105" y="128" text-anchor="middle" font-size="8" font-family="Barlow Condensed,sans-serif" font-weight="700" fill="#60a5fa" opacity="0"></text>
+      <text id="fld-of" x="105" y="32"  text-anchor="middle" font-size="8" font-family="Barlow Condensed,sans-serif" font-weight="700" fill="#60a5fa" opacity="0"></text>
+    </svg>
+    <div class="ctrl-row">
+      <button class="ctrl-btn" onclick="openAdmin()">⚙ Admin</button>
+      <button class="ctrl-btn danger" onclick="clearBases()">Clear</button>
+      <button class="ctrl-btn" onclick="advanceAll()">Adv all</button>
+    </div>
+    <div id="spd-a-reminder" style="display:none;font-family:'Barlow',sans-serif;font-size:10px;color:#a78bfa;text-align:center;font-style:italic;padding:0 4px">
+      ⚡ Speed A runner on 1st — must attempt steal of 2nd
+    </div>
+  </div>
+
+  <!-- PLAY DESCRIPTOR -->
+  <div id="play-descriptor" style="background:var(--surface);border:1px solid var(--team-primary);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text);line-height:1.6;min-height:44px;font-style:italic;display:none">
+    <span id="play-desc-text"></span>
+  </div>
+
+  <!-- HOME TEAM K SIGNS -->
+  <div id="k-sign-board" style="background:#0a0005;border:1px solid #2e1a1a;border-radius:8px;padding:8px 12px;display:none">
+    <div style="font-size:8px;color:#f87171;letter-spacing:2px;text-transform:uppercase;margin-bottom:5px" id="k-board-label">K SIGNS</div>
+    <div id="k-sign-row" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+  </div>
+
+  <!-- OUTCOME BUTTONS -->
+  <div id="outcome-panel">
+    <div class="btn-row">
+      <button class="ob ob-k"   onclick="recordOutcome('K')">K</button>
+      <button class="ob ob-gb"  onclick="recordOutcome('GB')">GB</button>
+      <button class="ob ob-fb"  onclick="recordOutcome('FB')">FB</button>
+      <button class="ob ob-bb"  onclick="recordOutcome('BB')">BB</button>
+    </div>
+    <div class="btn-row" style="margin-top:5px">
+      <button class="ob ob-1b"  onclick="recordOutcome('1B')">1B</button>
+      <button class="ob ob-2b"  onclick="recordOutcome('2B')">2B</button>
+      <button class="ob ob-3b"  onclick="recordOutcome('3B')">3B</button>
+      <button class="ob ob-hr"  onclick="recordOutcome('HR')">HR</button>
+    </div>
+    <div class="btn-row" style="margin-top:5px">
+      <button class="ob ob-sb" id="btn-sb" onclick="doSteal(true)">SB</button>
+      <button class="ob ob-cs" id="btn-cs" onclick="doSteal(false)">CS</button>
+    </div>
+  </div>
+
+  <!-- GAME LOG -->
+  <div id="game-log-wrap">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div class="bug-title" style="margin-bottom:0">Game Log</div>
+      <button onclick="undoLast()" style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--dim);font-size:10px;padding:3px 8px">↩ Undo</button>
+    </div>
+    <div id="game-log-entries" style="display:flex;flex-direction:column;max-height:150px;overflow-y:auto"></div>
+    <div id="game-log-empty" style="color:var(--dim);font-size:11px;text-align:center;padding:10px">No plays yet</div>
+  </div>
+
+  <!-- END GAME -->
+  <button onclick="openEndGame()" style="background:#1a1a2e;border:1px solid #4a4a6a;border-radius:8px;color:#9090c0;font-family:'Courier New',monospace;font-size:12px;padding:12px;width:100%;letter-spacing:1px;margin-top:4px">
+    ⬛ END GAME &amp; LOG STATS
+  </button>
+  <div style="height:20px"></div>
+</div>
+<!-- END GAME MODAL -->
+<div id="endgame-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:flex-start;justify-content:center;z-index:9999;padding:12px;overflow-y:auto">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:12px;margin-top:8px">
+
+    <div style="font-size:15px;font-weight:700;color:var(--gold);letter-spacing:1px">⬛ END GAME</div>
+
+    <!-- FINAL SCORE CONFIRM -->
+    <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
+      <div style="font-size:11px;color:var(--dim);margin-bottom:4px;letter-spacing:1px">FINAL SCORE</div>
+      <div style="font-size:20px;font-weight:700" id="eg-score-display">— 0 · 0 —</div>
+    </div>
+
+    <!-- APPS SCRIPT URL -->
+    <div>
+      <div class="fl" style="margin-bottom:4px">Apps Script URL <span id="eg-conn-status" style="color:var(--dim);font-weight:400;font-size:9px">● not tested</span></div>
+      <input id="eg-script-url" placeholder="https://script.google.com/macros/s/.../exec" style="font-size:10px">
+      <button onclick="testScriptConnection()" style="margin-top:5px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--dim);font-family:'Courier New',monospace;font-size:10px;padding:6px 10px;width:100%;cursor:pointer">⚡ TEST CONNECTION</button>
+    </div>
+
+    <!-- PITCHER DECISIONS -->
+    <div>
+      <div class="fl" style="margin-bottom:6px">Pitcher Decisions</div>
+      <div id="eg-pitcher-list" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+
+    <!-- SHEET TARGET -->
+    <div>
+      <div class="fl" style="margin-bottom:4px">Tab names in your sheet</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div><div style="font-size:8px;color:var(--dim);margin-bottom:2px">Schedule tab</div><input id="eg-tab-sched" value="Schedule" style="font-size:11px"></div>
+        <div><div style="font-size:8px;color:var(--dim);margin-bottom:2px">Teams tab</div><input id="eg-tab-teams" value="Teams" style="font-size:11px"></div>
+        <div><div style="font-size:8px;color:var(--dim);margin-bottom:2px">Hitters tab</div><input id="eg-tab-hit" value="Hitters" style="font-size:11px"></div>
+        <div><div style="font-size:8px;color:var(--dim);margin-bottom:2px">Pitchers tab</div><input id="eg-tab-pitch" value="Pitchers" style="font-size:11px"></div>
+      </div>
+    </div>
+
+    <!-- STATUS -->
+    <div id="eg-status" style="font-size:11px;color:var(--dim);min-height:16px;text-align:center"></div>
+
+    <!-- BUTTONS -->
+    <div style="display:flex;gap:8px">
+      <button onclick="closeEndGame()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--dim);font-family:var(--ui-font);font-size:14px;font-weight:600;padding:11px;flex:1;text-transform:uppercase">Cancel</button>
+      <button onclick="logToSheets()" id="eg-log-btn" style="background:#166534;border:none;border-radius:8px;color:#4ade80;font-family:var(--ui-font);font-size:15px;font-weight:700;padding:11px;flex:2;letter-spacing:1px;text-transform:uppercase">Log to Sheets ▶</button>
+    </div>
+
+    <!-- MANUAL BACKUP -->
+    <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:2px">
+      <button onclick="showBackup()" style="background:var(--surface2);border:1px solid var(--gold);border-radius:8px;color:var(--gold);font-family:var(--ui-font);font-size:13px;font-weight:700;padding:10px;width:100%;letter-spacing:1px;text-transform:uppercase">📋 Backup — Copy Stats as Text</button>
+      <div style="font-size:10px;color:var(--dim);margin-top:5px;text-align:center;font-family:var(--ui-font)">Use if the Sheets connection fails. Paste anywhere to save the game.</div>
+      <textarea id="eg-backup-text" readonly style="display:none;width:100%;height:170px;margin-top:8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--num-font);font-size:10px;padding:8px;resize:vertical"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- DECISION MODAL -->
+<div id="decision-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:flex-end;justify-content:center;z-index:9999;padding:0 12px 30px">
+  <div class="decision-box">
+    <div class="decision-title" id="decision-title">Decide</div>
+    <div id="decision-rule-note" style="font-family:'Barlow',sans-serif;font-size:11px;color:var(--dim);font-style:italic;margin-bottom:10px;line-height:1.5;display:none"></div>
+    <div class="decision-btns" id="decision-btns"></div>
+  </div>
+</div>
+<!-- ADMIN MODAL -->
+<div id="admin-modal">
+  <div class="admin-box">
+    <div class="admin-title">⚙ ADMIN</div>
+    <div>
+      <div class="fl" style="margin-bottom:5px">Bases</div>
+      <div class="base-toggles">
+        <button class="btog" id="b3t" onclick="toggleBase(3)">3B</button>
+        <button class="btog" id="b2t" onclick="toggleBase(2)">2B</button>
+        <button class="btog" id="b1t" onclick="toggleBase(1)">1B</button>
+      </div>
+    </div>
+    <div>
+      <div class="fl" style="margin-bottom:5px">Outs</div>
+      <div class="adj-row">
+        <button class="adj-btn" onclick="adjOuts(-1)">−</button>
+        <div class="adj-label" id="outs-label">0 outs</div>
+        <button class="adj-btn" onclick="adjOuts(1)">+</button>
+      </div>
+    </div>
+    <div>
+      <div class="fl" style="margin-bottom:5px">Score</div>
+      <div class="score-adj">
+        <div class="sai">
+          <div class="fl" id="away-score-lbl">AWAY</div>
+          <div class="adj-row"><button class="adj-btn" onclick="adjScore('away',-1)">−</button><div class="adj-label" id="away-score-disp">0</div><button class="adj-btn" onclick="adjScore('away',1)">+</button></div>
+        </div>
+        <div class="sai">
+          <div class="fl" id="home-score-lbl">HOME</div>
+          <div class="adj-row"><button class="adj-btn" onclick="adjScore('home',-1)">−</button><div class="adj-label" id="home-score-disp">0</div><button class="adj-btn" onclick="adjScore('home',1)">+</button></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="fl" style="margin-bottom:5px">Override Pitcher</div>
+      <div class="inline-row"><input id="admin-pitcher" placeholder="Name"><button class="small-btn" onclick="overridePitcher()">SET</button></div>
+    </div>
+    <div>
+      <div class="fl" style="margin-bottom:5px">Jump to Batter Slot</div>
+      <div class="inline-row"><input id="admin-batter-slot" placeholder="1–9" type="number" min="1" max="9" style="width:80px;flex:none"><button class="small-btn" onclick="overrideBatterSlot()">JUMP</button></div>
+    </div>
+    <button class="next-btn" onclick="adminNextHalf()">▶ NEXT HALF INNING</button>
+    <button class="done-btn" onclick="closeAdmin()">DONE</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// TEAM COLORS (2000 era uniforms)
+// ══════════════════════════════════════
+const TEAM_COLORS = {
+  ANA:{p:'#B71234',s:'#003263',a:'#B71234'},  // Angels red
+  ARI:{p:'#A71930',s:'#000000',a:'#E3D4AD'},  // DBacks red/sand
+  ATL:{p:'#CE1141',s:'#13274F',a:'#CE1141'},  // Braves red
+  BAL:{p:'#DF4601',s:'#000000',a:'#DF4601'},  // O's orange
+  BOS:{p:'#BD3039',s:'#0D2B56',a:'#BD3039'},  // Sox red
+  CHC:{p:'#0E3386',s:'#CC3433',a:'#0E3386'},  // Cubs blue
+  CIN:{p:'#C6011F',s:'#000000',a:'#C6011F'},  // Reds red
+  CLE:{p:'#00385D',s:'#E31937',a:'#E31937'},  // Indians navy
+  COL:{p:'#33006F',s:'#C4CED4',a:'#33006F'},  // Rockies purple
+  CWS:{p:'#27251F',s:'#C4CED4',a:'#27251F'},  // Sox black
+  DET:{p:'#0C2C56',s:'#FA4616',a:'#FA4616'},  // Tigers navy
+  FLA:{p:'#0077C8',s:'#FF6600',a:'#FFD100'},  // Marlins teal era
+  HOU:{p:'#002D62',s:'#EB6E1F',a:'#EB6E1F'},  // Astros navy/orange
+  KC: {p:'#004687',s:'#C09A5B',a:'#C09A5B'},  // Royals blue
+  LAD:{p:'#005A9C',s:'#EF3E42',a:'#EF3E42'},  // Dodgers blue
+  MIL:{p:'#12284B',s:'#FFC52F',a:'#FFC52F'},  // Brewers navy
+  MIN:{p:'#002B5C',s:'#D31145',a:'#D31145'},  // Twins navy
+  MON:{p:'#003DA5',s:'#E60026',a:'#E60026'},  // Expos blue
+  NYM:{p:'#002D72',s:'#FF5910',a:'#FF5910'},  // Mets blue
+  NYY:{p:'#003087',s:'#FFFFFF',a:'#003087'},  // Yankees navy
+  OAK:{p:'#003831',s:'#EFB21E',a:'#EFB21E'},  // A's green
+  PHI:{p:'#E81828',s:'#002D72',a:'#E81828'},  // Phillies red
+  PIT:{p:'#FDB827',s:'#27251F',a:'#FDB827'},  // Pirates gold
+  SD: {p:'#002D62',s:'#FFC425',a:'#FFC425'},  // Padres navy
+  SEA:{p:'#0C2C56',s:'#005C5C',a:'#C4CED4'},  // Mariners navy
+  SF: {p:'#FD5A1E',s:'#27251F',a:'#EFD19F'},  // Giants orange
+  STL:{p:'#C41E3A',s:'#0C2340',a:'#FEDB00'},  // Cards red
+  TB: {p:'#8FBCE6',s:'#002B5C',a:'#8FBCE6'},  // Devil Rays blue
+  TEX:{p:'#003278',s:'#C0111F',a:'#C0111F'},  // Rangers blue
+  TOR:{p:'#134A8E',s:'#1D2D5C',a:'#E8291C'},  // Jays blue
+};
+
+function applyTeamColors(abbr){
+  const c = TEAM_COLORS[abbr] || {p:'#3b82f6',s:'#1e3a5f',a:'#f59e0b'};
+  const root = document.documentElement;
+  root.style.setProperty('--team-primary', c.p);
+  root.style.setProperty('--team-secondary', c.s);
+  root.style.setProperty('--team-accent', c.a);
+  document.getElementById('game-bug').style.borderBottomColor = c.p;
+}
+
+// ══════════════════════════════════════
+// GAME STATE
+// ══════════════════════════════════════
+let G = {
+  awayAbbr:'', homeAbbr:'', gameNum:1,
+  awayRec:'0-0', homeRec:'0-0', awayRank:'1st', homeRank:'1st',
+  awayScore:0, homeScore:0,
+  inning:1, isTop:true, outs:0,
+  bases:[false,false,false],
+  baseRunners:[null,null,null],
+  awayFielding:{c:0,inf:0,of:0}, homeFielding:{c:0,inf:0,of:0},
+  homeKs:0,
+  awayScript:[], homeScript:[],
+  pitcherStats:{}, currentPitcherName:'',
+  awayLineup:[], homeLineup:[],
+  awayBatterIdx:0, homeBatterIdx:0,
+  gameLog:[],
+  ggPlays:{},
+  walkoffTriggered:false,
+  seriesId:null,
+  seriesAwayWins:0, seriesHomeWins:0,
+  seriesResults:[],
+  seasonStats:{},
+  pitcherSeasonStats:{},
+  currentPitcherOverLimit:false,
+};
+
+function mkBatter(p){
+  return {name:p.n, pos:p.pos, spd:p.spd||'B', fld:p.fld||0,
+    avg:'—',hr:'—',rbi:'—',r:'—',sb:'—',obp:'—',ops:'—',
+    gameABs:[], gameRBI:0, gameR:0, gameSB:0, gameGG:0};
+}
+
+// ══════════════════════════════════════
+// SCREEN
+// ══════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('game-bug').style.display = id==='game-screen'?'flex':'none';
+}
+
+// ══════════════════════════════════════
+// SETUP
+// ══════════════════════════════════════
+let _pendingGame=null;
+
+// (no init needed — lookupGame fires on input)
+
+function toggleRules(){
+  const body=document.getElementById('rules-body');
+  const btn=document.getElementById('rules-toggle');
+  const open=body.style.display==='flex';
+  body.style.display=open?'none':'flex';
+  btn.textContent=open?'SHOW ▾':'HIDE ▴';
+}
+
+function lookupGame(){
+  const num=parseInt(document.getElementById('game-num-input').value);
+  const res=document.getElementById('game-lookup-result');
+  const rc=document.getElementById('records-card');
+  const pb=document.getElementById('play-btn');
+  if(isNaN(num)||num<1||num>1215){
+    res.innerHTML='<span style="color:var(--red)">Enter a game number 1–1215</span>';
+    rc.style.display='none';pb.style.display='none';_pendingGame=null;return;
+  }
+  const entry=SCHEDULE[num];
+  if(!entry){res.innerHTML='<span style="color:var(--red)">Game not found</span>';return;}
+  const{home,away}=entry;
+  const seriesGame=((num-1)%3)+1;
+  _pendingGame={num,home,away,seriesGame};
+  function sum(script){
+    if(!script) return '—';
+    const spans=[];let cur=script[0],s=1;
+    for(let i=1;i<=9;i++){
+      if(i===9||script[i]!==cur){spans.push(s===i?`${cur} (${s}th)`:`${cur} (${s}–${i})`);if(i<9){cur=script[i];s=i+1;}}
+    }
+    return spans.join(' → ');
+  }
+  const hp=PITCHING[home]&&PITCHING[home][seriesGame];
+  const ap=PITCHING[away]&&PITCHING[away][seriesGame];
+  const hc = TEAM_COLORS[home]||{p:'#3b82f6'};
+  res.innerHTML=`<div style="color:var(--text);font-size:13px;font-weight:700;margin-bottom:4px">Game ${num} · Series G${seriesGame}</div>`+
+    `<div><b style="color:${hc.p}">${home}</b> (home) vs <b style="color:var(--accent)">${away}</b> (away)</div>`+
+    `<div style="margin-top:6px;font-size:10px"><b style="color:${hc.p}">${home} pitching:</b> ${sum(hp)}</div>`+
+    `<div style="font-size:10px"><b style="color:var(--accent)">${away} pitching:</b> ${sum(ap)}</div>`;
+  document.getElementById('away-rec-lbl').textContent=away+' W-L';
+  document.getElementById('home-rec-lbl').textContent=home+' W-L';
+  rc.style.display='flex';pb.style.display='block';
+  // Show series card if G2 or G3
+  renderSeriesCard(away, home, seriesGame, num);
+  renderScheduleContext(num);
+}
+
+async function startGame(){
+  if(!_pendingGame){toast('Enter a valid game number first');return;}
+  const{home,away,seriesGame,num}=_pendingGame;
+  G.awayAbbr=away;G.homeAbbr=home;G.gameNum=seriesGame;
+  G.awayRec=document.getElementById('away-rec').value;
+  G.homeRec=document.getElementById('home-rec').value;
+  G.awayRank=document.getElementById('away-rank').value;
+  G.homeRank=document.getElementById('home-rank').value;
+  G.awayScript=PITCHING[away]&&PITCHING[away][seriesGame]||[];
+  G.homeScript=PITCHING[home]&&PITCHING[home][seriesGame]||[];
+  const awayFull=ABBR_TO_NAME[away],homeFull=ABBR_TO_NAME[home];
+  G.awayLineup=(RAW_LINEUPS[awayFull]||[]).map(mkBatter);
+  G.homeLineup=(RAW_LINEUPS[homeFull]||[]).map(mkBatter);
+  G.awayFielding=teamFieldingSplit(G.awayLineup);
+  G.homeFielding=teamFieldingSplit(G.homeLineup);
+  G.awayScore=0;G.homeScore=0;G.inning=1;G.isTop=true;G.outs=0;
+  G.bases=[false,false,false];G.baseRunners=[null,null,null];
+  G.awayBatterIdx=0;G.homeBatterIdx=0;
+  G.pitcherStats={};G.currentPitcherName='';
+  G.homeKs=0;G.gameLog=[];G.ggPlays={};G.walkoffTriggered=false;
+  clearGameState(); // clear any previous game save
+
+  // ── Series tracker ──────────────────────────────
+  // Series ID = first game# in this 3-game block
+  const seriesFirstGame = num - (seriesGame-1);
+  G.seriesId = `${away}-${home}-${seriesFirstGame}`;
+  const savedSeries = loadSeries(G.seriesId);
+  G.seriesAwayWins = savedSeries.awayWins;
+  G.seriesHomeWins = savedSeries.homeWins;
+  G.seriesResults  = savedSeries.results;
+
+  applyTeamColors(home);
+  updateCurrentPitcher();
+  showScreen('game-screen');
+  renderAll();
+
+  // ── Season stats pull ────────────────────────────
+  const scriptUrl = localStorage.getItem('showdown_script_url');
+  if(scriptUrl){
+    setSeasonLoadStatus('⟳ Loading season stats…');
+    await pullSeasonStats(scriptUrl);
+  }
+}
+
+// ══════════════════════════════════════
+// FIELDING
+// ══════════════════════════════════════
+function teamFieldingSplit(lineup){
+  let c=0,inf=0,of=0;
+  lineup.forEach(p=>{
+    const a=PLAYER_ATTRS[p.name];
+    if(!a||p.pos==='DH') return;
+    const fld=a.fld||0;
+    if(p.pos==='C') c+=fld;
+    else if(['1B','2B','SS','3B'].includes(p.pos)) inf+=fld;
+    else if(['LF','CF','RF'].includes(p.pos)) of+=fld;
+  });
+  return{c,inf,of};
+}
+function playerSpeed(name){const a=PLAYER_ATTRS[name];return a?a.spd:'?';}
+
+// ══════════════════════════════════════
+// PITCHER
+// ══════════════════════════════════════
+function getPitcherName(side,inning){
+  const script=side==='away'?G.awayScript:G.homeScript;
+  // inning 10+ maps to index 9
+  const idx=Math.min(inning-1,9);
+  return script[idx];
+}
+function isPitcherOverLimit(side,inning){
+  const abbr=side==='away'?G.awayAbbr:G.homeAbbr;
+  const g=G.gameNum;
+  const idx=Math.min(inning-1,9);
+  return !!(OVER_LIMIT[abbr]&&OVER_LIMIT[abbr][g]&&OVER_LIMIT[abbr][g][idx]);
+}
+function updateCurrentPitcher(){
+  const side=G.isTop?'home':'away';
+  const name=getPitcherName(side,G.inning);
+  if(!G.pitcherStats[name]) G.pitcherStats[name]={gameOuts:0,gameK:0,gameH:0,gameBB:0,gameHR:0,gameER:0,wl:'—',era:'—',whip:'—',hrS:'—'};
+  const overLimit=isPitcherOverLimit(side,G.inning);
+  if(name!==G.currentPitcherName){
+    if(G.currentPitcherName) toast(`🔄 ${name} now pitching`+(overLimit?' ⚠ OVER LIMIT':''));
+    G.currentPitcherName=name;
+  }
+  G.currentPitcherOverLimit=overLimit;
+}
+function cp(){return G.pitcherStats[G.currentPitcherName]||{};}
+
+// ══════════════════════════════════════
+// BATTER
+// ══════════════════════════════════════
+function currentLineup(){return G.isTop?G.awayLineup:G.homeLineup;}
+function currentBatterIdx(){return G.isTop?G.awayBatterIdx:G.homeBatterIdx;}
+function currentBatter(){return currentLineup()[currentBatterIdx()];}
+function advanceBatter(){
+  if(G.isTop) G.awayBatterIdx=(G.awayBatterIdx+1)%9;
+  else G.homeBatterIdx=(G.homeBatterIdx+1)%9;
+}
+
+function gameLine(p){
+  const abs=p.gameABs.filter(a=>!['BB','SAC','SB'].includes(a));
+  const hits=p.gameABs.filter(a=>['1B','2B','3B','HR'].includes(a)).length;
+  const bb=p.gameABs.filter(a=>a==='BB').length;
+  const hr=p.gameABs.filter(a=>a==='HR').length;
+  let line=`${hits}-for-${abs.length}`;
+  if(hr) line+=`, ${hr>1?hr+' HR':'HR'}`;
+  if(p.gameRBI) line+=`, ${p.gameRBI} RBI`;
+  if(p.gameR) line+=`, ${p.gameR} R`;
+  if(bb) line+=`, ${bb>1?bb+' BB':'BB'}`;
+  if(p.gameSB) line+=`, ${p.gameSB} SB`;
+  return line;
+}
+
+// ══════════════════════════════════════
+// OUTCOME
+// ══════════════════════════════════════
+function recordOutcome(outcome){
+  const batter=currentBatter();
+  const pitcher=cp();
+
+  // ── Full state snapshot for undo ──────────────────────────
+  const stateSnap = captureState();
+
+  if(['1B','2B','3B','HR'].includes(outcome)) pitcher.gameH++;
+  if(outcome==='BB') pitcher.gameBB++;
+  if(outcome==='K')  pitcher.gameK++;
+  if(outcome==='HR') pitcher.gameHR++;
+  if(outcome==='K'&&G.isTop) G.homeKs++;
+  const runsBefore=G.isTop?G.awayScore:G.homeScore;
+  // Snapshot BEFORE any base advancement so desc sees pre-play state
+  const snap={
+    bases:[...G.bases],
+    runners:[...G.baseRunners],
+    outs:G.outs,
+    inning:G.inning,
+    isTop:G.isTop,
+    pitcherName:G.currentPitcherName,
+    stateSnap, // carry full undo snapshot through to logPlay
+  };
+  if(outcome==='K'){addOut(1);finishAB(batter,outcome,runsBefore,null,snap);}
+  else if(outcome==='GB') handleGB(batter,runsBefore,snap);
+  else if(outcome==='FB') handleFB(batter,runsBefore,snap);
+  else if(outcome==='BB'){walkAdvance();finishAB(batter,outcome,runsBefore,null,snap);}
+  else if(outcome==='1B'){singleAdvance();finishAB(batter,outcome,runsBefore,null,snap);}
+  else if(outcome==='2B'){doubleAdvance();finishAB(batter,outcome,runsBefore,null,snap);}
+  else if(outcome==='3B'){tripleAdvance();finishAB(batter,outcome,runsBefore,null,snap);}
+  else if(outcome==='HR'){homeRun();finishAB(batter,outcome,runsBefore,null,snap);}
+  else if(outcome==='SAC') handleSAC(batter,runsBefore,snap);
+  else if(outcome==='DP') handleDP(batter,runsBefore,snap);
+}
+
+function finishAB(batter,outcome,runsBefore,extraDesc,snap){
+  batter.gameABs.push(outcome);
+  // CRITICAL: read the score from the side that was batting when the play began.
+  // addOut() may have already flipped G.isTop if this was the third out.
+  const wasTop = snap && typeof snap.isTop==='boolean' ? snap.isTop : G.isTop;
+  const runsAfter = wasTop ? G.awayScore : G.homeScore;
+  const scored = runsAfter - runsBefore;
+  if(scored>0){
+    batter.gameRBI += scored;
+    // Credit ER to the pitcher who was on the mound for this play
+    const pName = (snap && snap.pitcherName) || G.currentPitcherName;
+    if(G.pitcherStats[pName]) G.pitcherStats[pName].gameER += scored;
+  }
+  if(outcome==='HR') batter.gameR++;
+
+  // Build stat tags for log
+  const stats=[];
+  if(['1B','2B','3B','HR'].includes(outcome)) stats.push({t:'H',c:'#4ade80'});
+  if(outcome==='HR') stats.push({t:'HR',c:'#fbbf24'},{t:'+R',c:'#fbbf24'});
+  if(outcome==='BB') stats.push({t:'BB',c:'#93c5fd'});
+  if(outcome==='SB') stats.push({t:'SB',c:'#a78bfa'});
+  if(scored>0){
+    if(outcome!=='HR') stats.push({t:`+${scored} RBI`,c:'#f59e0b'});
+    else if(scored>1) stats.push({t:`+${scored} RBI`,c:'#fbbf24'});
+  }
+  // R scored from being on base (non-HR) — tracked by Speed A or other advancing plays
+  // We note this when the runner scored — but finishAB is for the batter, so just tag RBI/HR
+
+  const desc=extraDesc||generatePlayDesc(batter,outcome,snap);
+  logPlay(batter,outcome,desc,stats,snap);
+  showPlayDesc(desc);
+  if(!G.isTop&&G.homeScore>G.awayScore&&G.inning>=9&&!G.walkoffTriggered){
+    G.walkoffTriggered=true;
+    advanceBatter();
+    updateCurrentPitcher();
+    renderAll();
+    setTimeout(triggerWalkoff,400);
+    return;
+  }
+  advanceBatter();
+  updateCurrentPitcher();
+  renderAll();
+}
+
+// ── OUT / INNING ──────────────────────
+function addOut(n){
+  const p=cp();
+  for(let i=0;i<n;i++){
+    if(G.outs>=3) break;
+    p.gameOuts++;G.outs++;
+    if(G.outs>=3){
+      G.outs=0;G.bases=[false,false,false];G.baseRunners=[null,null,null];
+      if(G.isTop) G.isTop=false;
+      else{G.isTop=true;G.inning++;}
+    }
+  }
+}
+function add2Outs(){
+  for(let i=0;i<2;i++){
+    if(G.outs>=3) break;
+    cp().gameOuts++;G.outs++;
+    if(G.outs>=3){
+      G.outs=0;G.bases=[false,false,false];G.baseRunners=[null,null,null];
+      if(G.isTop) G.isTop=false;
+      else{G.isTop=true;G.inning++;}
+    }
+  }
+}
+
+// ── BASE RUNNING ──────────────────────
+function walkAdvance(){
+  const bn=currentBatter().name;
+  // Only advance runners who are forced (chain from 1B backward)
+  if(G.bases[0]&&G.bases[1]&&G.bases[2]){
+    // Bases loaded — runner on 3rd forced home
+    scoreRunner(G.baseRunners[2]);
+    // 2nd→3rd, 1st→2nd (batter→1st below)
+    G.bases[2]=true; G.baseRunners[2]=G.baseRunners[1];
+    G.bases[1]=true; G.baseRunners[1]=G.baseRunners[0];
+  } else if(G.bases[0]&&G.bases[1]){
+    // 1st + 2nd — runner on 2nd forced to 3rd
+    G.bases[2]=true; G.baseRunners[2]=G.baseRunners[1];
+    G.bases[1]=true; G.baseRunners[1]=G.baseRunners[0];
+  } else if(G.bases[0]){
+    // Only 1st — runner on 1st forced to 2nd; 3rd unaffected
+    G.bases[1]=true; G.baseRunners[1]=G.baseRunners[0];
+  }
+  // Batter always takes 1st on a walk
+  G.bases[0]=true; G.baseRunners[0]=bn;
+}
+function singleAdvance(){
+  const bn=currentBatter().name;
+  const[b1,b2,b3]=G.bases;const[r1,r2,r3]=G.baseRunners;
+  const r2spd=r2?playerSpeed(r2):'B';
+  if(b3) scoreRunner(r3);
+  if(b2&&r2spd==='A'){
+    scoreRunner(r2); // Speed A runner scores from 2nd
+    G.bases[2]=false;G.baseRunners[2]=null;
+  } else {
+    G.bases[2]=b2;G.baseRunners[2]=r2;
+  }
+  G.bases[1]=b1;G.baseRunners[1]=r1;
+  G.bases[0]=true;G.baseRunners[0]=bn;
+}
+function doubleAdvance(){
+  const bn=currentBatter().name;
+  const[b1,b2,b3]=G.bases;const[r1,r2,r3]=G.baseRunners;
+  if(b3) scoreRunner(r3);
+  if(b2) scoreRunner(r2);
+  G.bases[2]=b1;G.baseRunners[2]=r1;
+  G.bases[1]=true;G.baseRunners[1]=bn;
+  G.bases[0]=false;G.baseRunners[0]=null;
+}
+function tripleAdvance(){
+  const bn=currentBatter().name;
+  const[r1,r2,r3]=G.baseRunners;
+  const scorers=[r1,r2,r3].filter((n,i)=>G.bases[i]);
+  G.bases=[false,false,true];G.baseRunners=[null,null,bn];
+  scorers.forEach(n=>scoreRunner(n));
+}
+function homeRun(){
+  const[r1,r2,r3]=G.baseRunners;
+  const scorers=[r1,r2,r3].filter((n,i)=>G.bases[i]);
+  G.bases=[false,false,false];G.baseRunners=[null,null,null];
+  scorers.forEach(n=>scoreRunner(n));  // runners on base
+  scoredRun();                          // the batter (R credited in finishAB)
+}
+function scoredRun(){if(G.isTop) G.awayScore++;else G.homeScore++;}
+
+// Score a run AND credit it to the specific runner
+function scoreRunner(name){
+  scoredRun();
+  if(!name) return;
+  const lineup = G.isTop ? G.awayLineup : G.homeLineup;
+  const p = lineup.find(x=>x.name===name);
+  if(p) p.gameR++;
+}
+
+// ── GB ────────────────────────────────
+function handleGB(batter,runsBefore,snap){
+  const desc=generatePlayDesc(batter,'GB',snap);
+
+  // Double play opportunity: runner on 1st, fewer than 2 outs
+  if(G.bases[0] && G.outs<2){
+    showDecision('Ground ball — double play?',[
+      {label:'✓ TURN TWO — Double Play',cls:'d-red',fn:()=>{
+        const fieldSide=G.isTop?'home':'away';
+        const ifs=getInfielders(fieldSide);
+        [...ifs].sort(()=>Math.random()-.5).slice(0,2).forEach(n=>awardGG(n));
+        const[b1,b2,b3]=G.bases;const[r1,r2,r3]=G.baseRunners;
+        if(b3) scoreRunner(r3);           // runner on 3rd can still score
+        G.bases[2]=b2;G.baseRunners[2]=r2; // 2nd → 3rd
+        G.bases[1]=false;G.baseRunners[1]=null; // lead runner erased at 2nd
+        G.bases[0]=false;G.baseRunners[0]=null; // batter out at 1st
+        add2Outs();
+        closeDecision();
+        finishAB(batter,'DP',runsBefore,generatePlayDesc(batter,'DP',snap),snap);
+      }},
+      {label:'✗ One out only — runners advance',cls:'d-gray',fn:()=>{
+        const[b1,b2,b3]=G.bases;const[r1,r2,r3]=G.baseRunners;
+        if(b3) scoreRunner(r3);
+        G.bases[2]=b2;G.baseRunners[2]=r2;
+        G.bases[1]=b1;G.baseRunners[1]=r1;
+        G.bases[0]=false;G.baseRunners[0]=null;
+        addOut(1);
+        closeDecision();
+        finishAB(batter,'GB',runsBefore,desc,snap);
+      }},
+    ],'📖 Runner on 1st with <2 outs — a double play is in order. Choose whether the defense turns two.');
+    return;
+  }
+
+  // No DP chance
+  if(G.outs<2){
+    const[b1,b2,b3]=G.bases;const[r1,r2,r3]=G.baseRunners;
+    if(b3) scoreRunner(r3);
+    G.bases[2]=b2;G.baseRunners[2]=r2;
+    G.bases[1]=b1;G.baseRunners[1]=r1;
+    G.bases[0]=false;G.baseRunners[0]=null;
+    addOut(1);
+  } else {addOut(1);}
+  finishAB(batter,'GB',runsBefore,desc,snap);
+}
+
+// ── FB ────────────────────────────────
+function handleFB(batter,runsBefore,snap){
+  const desc=generatePlayDesc(batter,'FB',snap);
+  if(G.bases[2]&&G.outs<2){
+    showDecision('Runner on 3rd — sac fly?',[
+      {label:'✓ Scores — SAC FLY',cls:'d-green',fn:()=>{
+        scoreRunner(G.baseRunners[2]);addOut(1);G.bases[2]=false;G.baseRunners[2]=null;
+        closeDecision();finishAB(batter,'SAC',runsBefore,desc+' Deep enough — runner scores. Sac fly.',snap);
+      }},
+      {label:'✗ Out at home — OF assist!',cls:'d-red',fn:()=>{
+        const fieldSide=G.isTop?'home':'away';
+        const ofs=getOutfielders(fieldSide);
+        if(ofs.length){const fielder=pick(ofs);awardGG(fielder);toast(`🧤 ${lastName(fielder)} cuts him down at home!`);}
+        addOut(2);G.bases[2]=false;G.baseRunners[2]=null;
+        closeDecision();finishAB(batter,'FB',runsBefore,desc+' Runner tags and goes — OUT at the plate!',snap);
+      }},
+    ],'📖 Rule: On a fly ball with a runner on 3rd and fewer than 2 outs, the runner may tag up and attempt to score after the catch. If out at home, both the batter (fly out) and runner count as outs.');
+  } else {addOut(1);finishAB(batter,'FB',runsBefore,desc,snap);}
+}
+
+// ── SAC ───────────────────────────────
+function handleSAC(batter,runsBefore,snap){
+  if(!G.bases[2]||G.outs>=2){toast('SAC: need runner on 3rd with <2 outs');return;}
+  const desc=generatePlayDesc(batter,'SAC',snap);
+  showDecision('Sac fly — runner scores?',[
+    {label:'✓ Scores',cls:'d-green',fn:()=>{
+      scoredRun();G.bases[2]=false;G.baseRunners[2]=null;addOut(1);
+      closeDecision();finishAB(batter,'SAC',runsBefore,desc,snap);
+    }},
+    {label:'✗ Out at home — OF assist!',cls:'d-red',fn:()=>{
+      const fieldSide=G.isTop?'home':'away';
+      const ofs=getOutfielders(fieldSide);
+      if(ofs.length){const fielder=pick(ofs);awardGG(fielder);toast(`🧤 ${lastName(fielder)} guns him down at the plate!`);}
+      G.bases[2]=false;G.baseRunners[2]=null;add2Outs();
+      closeDecision();finishAB(batter,'SAC',runsBefore,desc+' Runner tags — thrown out at home! What an arm!',snap);
+    }},
+    {label:'Cancel',cls:'d-gray',fn:closeDecision},
+  ],'📖 Rule: SAC fly requires a runner on 3rd with fewer than 2 outs. Batter is out either way. If runner is thrown out at home, that counts as a second out.');
+}
+
+// ── DP ────────────────────────────────
+function handleDP(batter,runsBefore,snap){
+  if(!G.bases[0]||G.outs>=2){toast('DP: need runner on 1st with <2 outs');return;}
+  const[b1,b2,b3]=G.bases;
+  const opts=[];
+  const fieldSide=G.isTop?'home':'away';
+  const awardDPGG=()=>{
+    const ifs=getInfielders(fieldSide);
+    const shuffled=[...ifs].sort(()=>Math.random()-.5).slice(0,Math.min(2,ifs.length));
+    shuffled.forEach(n=>awardGG(n));
+  };
+  if(b1&&b2&&b3){
+    opts.push({label:'Out: batter + runner 1B',cls:'d-red',fn:()=>{
+      G.bases[0]=false;awardDPGG();add2Outs();closeDecision();
+      finishAB(batter,'DP',runsBefore,generatePlayDesc(batter,'DP',snap),snap);
+    }});
+    opts.push({label:'Out: batter + runner 2B',cls:'d-red',fn:()=>{
+      G.bases[1]=false;awardDPGG();add2Outs();closeDecision();
+      finishAB(batter,'DP',runsBefore,generatePlayDesc(batter,'DP',snap),snap);
+    }});
+  } else if(b1&&b2){
+    opts.push({label:'Out: batter + runner 1B (classic)',cls:'d-red',fn:()=>{
+      G.bases[0]=false;G.bases[1]=true;awardDPGG();add2Outs();closeDecision();
+      finishAB(batter,'DP',runsBefore,generatePlayDesc(batter,'DP',snap),snap);
+    }});
+    opts.push({label:'Out: batter + runner 2B',cls:'d-red',fn:()=>{
+      G.bases[1]=false;awardDPGG();add2Outs();closeDecision();
+      finishAB(batter,'DP',runsBefore,generatePlayDesc(batter,'DP',snap),snap);
+    }});
+  } else {
+    opts.push({label:'Out: batter + runner 1B',cls:'d-red',fn:()=>{
+      G.bases[0]=false;awardDPGG();add2Outs();closeDecision();
+      finishAB(batter,'DP',runsBefore,generatePlayDesc(batter,'DP',snap),snap);
+    }});
+  }
+  opts.push({label:'Cancel',cls:'d-gray',fn:closeDecision});
+  showDecision("Double Play — who's out?",opts,'📖 Rule: DP requires a runner on 1st with fewer than 2 outs. Two outs are recorded — the batter and one baserunner. Choose which runner is retired at 2nd.');
+}
+
+// ── STEAL ─────────────────────────────
+// One-tap steal: SB button = safe, CS button = caught
+function doSteal(safe){
+  if(!G.bases[0]){toast('No runner on 1st');return;}
+  if(G.bases[1]){toast('2B already occupied');return;}
+  const runnerName=G.baseRunners[0];
+  const rln=runnerName?lastName(runnerName):'Runner';
+  const pitcher=lastName(G.currentPitcherName||'the pitcher');
+  const runner=currentLineup().find(p=>p.name===runnerName);
+  const stateSnap=captureState();
+
+  if(safe){
+    G.bases[1]=true;G.baseRunners[1]=runnerName;
+    G.bases[0]=false;G.baseRunners[0]=null;
+    if(runner) runner.gameSB++;
+    const sbDesc=pick([
+      rln+' is off on the pitch \u2014 perfect jump \u2014 SAFE at second! No throw!',
+      rln+' gets a great read and swipes second base easily. Stolen!',
+      pitcher+' takes forever and '+rln+' takes second. Cannot hold him on!',
+      rln+' breaks \u2014 the throw is late \u2014 he is IN there! Stolen base!',
+      'Pure speed. '+rln+' steals second standing up. Does not even slide.',
+    ]);
+    showPlayDesc(sbDesc);
+    logPlay({name:runnerName||'Runner'},'SB',sbDesc,[{t:'SB',c:'#a78bfa'}],{stateSnap:stateSnap});
+    toast('\u26a1 '+rln+' steals 2B!');
+  } else {
+    G.bases[0]=false;G.baseRunners[0]=null;
+    const fieldSide=G.isTop?'home':'away';
+    const catName=getCatcher(fieldSide);
+    awardGG(catName);
+    const catln=lastName(catName);
+    const csDesc=pick([
+      rln+' goes \u2014 '+catln+' comes up THROWING \u2014 CAUGHT HIM! Perfect peg to second!',
+      catln+' fires a laser to second and '+rln+' is out by a mile. CAUGHT STEALING!',
+      'They had the steal on, but '+catln+' had other ideas. GUN. He is out.',
+      rln+' breaks late and '+catln+' does not even hesitate. Throw beats him easily.',
+      catln+' pops up and GUNS it \u2014 the tag is down \u2014 OUT! What an arm!',
+    ]);
+    showPlayDesc(csDesc);
+    toast('\ud83e\udde4 '+catln+' throws him out! Caught stealing.');
+    addOut(1);
+    updateCurrentPitcher();
+    logPlay({name:runnerName||'Runner'},'CS',csDesc,[{t:'CS',c:'#f87171'}],{stateSnap:stateSnap});
+  }
+  renderAll();
+}
+
+function awardGG(name){
+  if(!name) return;
+  if(!G.ggPlays[name]) G.ggPlays[name]=0;
+  G.ggPlays[name]++;
+  const p=currentLineup().find(pl=>pl.name===name)||
+    (G.isTop?G.homeLineup:G.awayLineup).find(pl=>pl.name===name)||
+    G.homeLineup.find(pl=>pl.name===name)||
+    G.awayLineup.find(pl=>pl.name===name);
+  if(p) p.gameGG=(p.gameGG||0)+1;
+}
+
+// ── ADMIN ─────────────────────────────
+function clearBases(){G.bases=[false,false,false];G.baseRunners=[null,null,null];renderAll();}
+function advanceAll(){
+  if(G.bases[2]) scoreRunner(G.baseRunners[2]);
+  G.bases[2]=G.bases[1];G.baseRunners[2]=G.baseRunners[1];
+  G.bases[1]=G.bases[0];G.baseRunners[1]=G.baseRunners[0];
+  G.bases[0]=false;G.baseRunners[0]=null;
+  renderAll();
+}
+function openAdmin(){
+  document.getElementById('admin-modal').style.display='flex';
+  ['b1t','b2t','b3t'].forEach((id,i)=>{document.getElementById(id).className='btog'+(G.bases[i]?' on':'');});
+  document.getElementById('outs-label').textContent=G.outs+' out'+(G.outs!==1?'s':'');
+  document.getElementById('away-score-lbl').textContent=G.awayAbbr;
+  document.getElementById('home-score-lbl').textContent=G.homeAbbr;
+  document.getElementById('away-score-disp').textContent=G.awayScore;
+  document.getElementById('home-score-disp').textContent=G.homeScore;
+}
+function closeAdmin(){document.getElementById('admin-modal').style.display='none';updateCurrentPitcher();renderAll();}
+function toggleBase(b){G.bases[b-1]=!G.bases[b-1];document.getElementById('b'+b+'t').className='btog'+(G.bases[b-1]?' on':'');}
+function adjOuts(n){G.outs=Math.max(0,Math.min(2,G.outs+n));document.getElementById('outs-label').textContent=G.outs+' out'+(G.outs!==1?'s':'');}
+function adjScore(side,n){
+  if(side==='away'){G.awayScore=Math.max(0,G.awayScore+n);document.getElementById('away-score-disp').textContent=G.awayScore;}
+  else{G.homeScore=Math.max(0,G.homeScore+n);document.getElementById('home-score-disp').textContent=G.homeScore;}
+}
+function adminNextHalf(){
+  G.outs=0;G.bases=[false,false,false];G.baseRunners=[null,null,null];
+  if(G.isTop) G.isTop=false;else{G.isTop=true;G.inning++;}
+  closeAdmin();
+}
+function overridePitcher(){
+  const name=document.getElementById('admin-pitcher').value.trim();
+  if(!name) return;
+  if(!G.pitcherStats[name]) G.pitcherStats[name]={gameOuts:0,gameK:0,gameH:0,gameBB:0,gameHR:0,gameER:0,wl:'—',era:'—',whip:'—',hrS:'—'};
+  G.currentPitcherName=name;
+  document.getElementById('admin-pitcher').value='';
+  toast('Now pitching: '+name);
+}
+function overrideBatterSlot(){
+  const slot=parseInt(document.getElementById('admin-batter-slot').value);
+  if(isNaN(slot)||slot<1||slot>9) return;
+  if(G.isTop) G.awayBatterIdx=slot-1;else G.homeBatterIdx=slot-1;
+  document.getElementById('admin-batter-slot').value='';
+  toast('Batter: #'+slot+' '+currentBatter().name);
+}
+
+// ══════════════════════════════════════
+// GAME LOG
+// ══════════════════════════════════════
+function logPlay(batter,outcome,desc,stats,snap){
+  G.gameLog.push({
+    outcome,
+    batterName:batter.name,
+    desc,
+    stats:stats||[],
+    inning:G.inning,
+    half:G.isTop?'▲':'▼',
+    scoreAway:G.awayScore,
+    scoreHome:G.homeScore,
+    stateSnap: snap&&snap.stateSnap ? snap.stateSnap : null,
+  });
+  renderGameLog();
+}
+
+function renderGameLog(){
+  const entries=document.getElementById('game-log-entries');
+  const empty=document.getElementById('game-log-empty');
+  if(G.gameLog.length===0){entries.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  entries.innerHTML='';
+  [...G.gameLog].reverse().forEach((play,ri)=>{
+    const i=G.gameLog.length-1-ri;
+    const div=document.createElement('div');
+    div.className='log-entry';
+    const bc=getBadgeColor(play.outcome);
+    // Stat tags
+    const statTags=(play.stats||[]).map(s=>
+      `<span style="font-family:var(--num-font);font-size:9px;font-weight:700;color:${s.c};background:rgba(0,0,0,.3);border-radius:3px;padding:1px 4px;margin-left:3px">${s.t}</span>`
+    ).join('');
+    div.innerHTML=
+      `<div class="log-num">${G.gameLog.length-ri}</div>`+
+      `<div class="log-badge" style="background:${bc.bg};color:${bc.fg}">${play.outcome}</div>`+
+      `<div class="log-text"><span class="log-batter">${play.batterName}</span>${statTags}<br>`+
+      `<span style="font-size:10px">${play.half}${play.inning} · ${play.scoreAway}–${play.scoreHome}</span></div>`+
+      `<button class="log-undo" onclick="undoPlay(${i})">↩</button>`;
+    entries.appendChild(div);
+  });
+}
+
+function getBadgeColor(o){
+  if(o==='K') return{bg:'#3b0f0f',fg:'#f87171'};
+  if(o==='HR') return{bg:'#3d2000',fg:'#fbbf24'};
+  if(o==='BB') return{bg:'#0f2040',fg:'#93c5fd'};
+  if(['1B','2B','3B'].includes(o)) return{bg:'#1e3a1e',fg:'#4ade80'};
+  if(o==='DP') return{bg:'#2a1f1f',fg:'#f87171'};
+  if(o==='SAC') return{bg:'#1e2a1e',fg:'#86efac'};
+  return{bg:'#1a2535',fg:'#7a92a8'};
+}
+
+function captureState(){
+  // Deep copy everything needed to fully reverse a play
+  return {
+    awayScore:G.awayScore, homeScore:G.homeScore,
+    inning:G.inning, isTop:G.isTop, outs:G.outs,
+    bases:[...G.bases],
+    baseRunners:[...G.baseRunners],
+    awayBatterIdx:G.awayBatterIdx, homeBatterIdx:G.homeBatterIdx,
+    homeKs:G.homeKs,
+    currentPitcherName:G.currentPitcherName,
+    // Deep copy pitcher stats
+    pitcherStats:JSON.parse(JSON.stringify(G.pitcherStats)),
+    // Snapshot each batter's AB log, RBI, R, SB, GG
+    awayLineupSnap:G.awayLineup.map(p=>({
+      gameABs:[...p.gameABs], gameRBI:p.gameRBI, gameR:p.gameR,
+      gameSB:p.gameSB, gameGG:p.gameGG||0
+    })),
+    homeLineupSnap:G.homeLineup.map(p=>({
+      gameABs:[...p.gameABs], gameRBI:p.gameRBI, gameR:p.gameR,
+      gameSB:p.gameSB, gameGG:p.gameGG||0
+    })),
+  };
+}
+
+function restoreState(s){
+  G.awayScore=s.awayScore; G.homeScore=s.homeScore;
+  G.inning=s.inning; G.isTop=s.isTop; G.outs=s.outs;
+  G.bases=[...s.bases];
+  G.baseRunners=[...s.baseRunners];
+  G.awayBatterIdx=s.awayBatterIdx; G.homeBatterIdx=s.homeBatterIdx;
+  G.homeKs=s.homeKs;
+  G.currentPitcherName=s.currentPitcherName;
+  G.pitcherStats=JSON.parse(JSON.stringify(s.pitcherStats));
+  G.awayLineup.forEach((p,i)=>{
+    const snap=s.awayLineupSnap[i];
+    if(!snap) return;
+    p.gameABs=[...snap.gameABs]; p.gameRBI=snap.gameRBI;
+    p.gameR=snap.gameR; p.gameSB=snap.gameSB; p.gameGG=snap.gameGG;
+  });
+  G.homeLineup.forEach((p,i)=>{
+    const snap=s.homeLineupSnap[i];
+    if(!snap) return;
+    p.gameABs=[...snap.gameABs]; p.gameRBI=snap.gameRBI;
+    p.gameR=snap.gameR; p.gameSB=snap.gameSB; p.gameGG=snap.gameGG;
+  });
+}
+
+function undoPlay(idx){
+  if(idx<0||idx>=G.gameLog.length) return;
+  const play=G.gameLog[idx];
+  if(play.stateSnap){
+    restoreState(play.stateSnap);
+    G.gameLog.splice(idx,1);
+    // Clear play descriptor
+    document.getElementById('play-descriptor').style.display='none';
+    toast('↩ Play undone — state restored');
+    updateCurrentPitcher();
+    renderAll();
+    renderGameLog();
+  } else {
+    // Fallback: no snapshot (e.g. CS/SB entries) — just remove from log
+    G.gameLog.splice(idx,1);
+    toast('↩ Removed from log (no state restore)');
+    renderGameLog();
+  }
+}
+function undoLast(){
+  if(G.gameLog.length===0){toast('Nothing to undo');return;}
+  // Find the last entry that has a stateSnap (skip SB/CS entries without one)
+  for(let i=G.gameLog.length-1;i>=0;i--){
+    if(G.gameLog[i].stateSnap){undoPlay(i);return;}
+  }
+  // fallback: remove last entry
+  undoPlay(G.gameLog.length-1);
+}
+
+// ══════════════════════════════════════
+// PLAY DESCRIPTOR (50+ variations)
+// ══════════════════════════════════════
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+function getInfielders(side){return(side==='home'?G.homeLineup:G.awayLineup).filter(p=>['1B','2B','SS','3B'].includes(p.pos)).map(p=>p.name);}
+function getOutfielders(side){return(side==='home'?G.homeLineup:G.awayLineup).filter(p=>['LF','CF','RF'].includes(p.pos)).map(p=>p.name);}
+function getCatcher(side){const c=(side==='home'?G.homeLineup:G.awayLineup).find(p=>p.pos==='C');return c?c.name:'the catcher';}
+function lastName(full){return(full||'').split(' ').pop().replace(',','');}
+
+function generatePlayDesc(batter,outcome,snap){
+  // Use snapshot (pre-play state) so runners/bases reflect what was true BEFORE advancing
+  const s=snap||{bases:[...G.bases],runners:[...G.baseRunners],outs:G.outs};
+  const bn=lastName(batter.name);
+  const pitcher=lastName(G.currentPitcherName||'the pitcher');
+  const fieldSide=G.isTop?'home':'away';
+  const ifs=getInfielders(fieldSide);
+  const ofs=getOutfielders(fieldSide);
+  const rif=ifs.length?lastName(pick(ifs)):'the infielder';
+  const rif2=ifs.length>1?lastName(pick(ifs.filter(n=>lastName(n)!==rif)||ifs)):rif;
+  const rof=ofs.length?lastName(pick(ofs)):'the outfielder';
+  const r1name=s.runners[0];
+  const r2name=s.runners[1];
+  const r3name=s.runners[2];
+  const r1ln=r1name?lastName(r1name):null;
+  const r2ln=r2name?lastName(r2name):null;
+  const r3ln=r3name?lastName(r3name):null;
+  const r2spd=r2name?playerSpeed(r2name):'B';
+  const basesLoaded=s.bases[0]&&s.bases[1]&&s.bases[2];
+
+  // Speed A scoring bonus for singles
+  const speedBonus=(outcome==='1B'&&r2name&&r2spd==='A')
+    ? ` ${r2ln} never breaks stride — he SCORES all the way from second! That SPEED!` : '';
+
+  // HR context
+  const batterHRs=batter.gameABs.filter(a=>a==='HR').length; // HRs BEFORE this one (not pushed yet)
+  const isMultiHR=batterHRs>=1;
+
+  const K=[
+    `${pitcher} blows it right by him. Sit down, ${bn}.`,
+    `Full count. ${pitcher} reaches back — swing and a miss! Punchout.`,
+    `${bn} chases the breaking ball in the dirt. That's a K.`,
+    `Called strike three on the outside corner. ${bn} is frozen.`,
+    `${pitcher} paints the black. ${bn} can't catch up to it. Strike three, looking.`,
+    `${bn} flails at the high cheese. The crowd LOVES it. Strikeout.`,
+    `${pitcher} drops in a big hook and ${bn} bites. See ya.`,
+    `${bn} is way out front on the change. Misses badly. Strikeout.`,
+    `Three-and-two. The payoff pitch — WHIFF. ${bn} is rung up.`,
+    `${pitcher} goes up and in, ${bn} can't hold up. Strike three!`,
+    `Back-door slider catches ${bn} looking. He thought it was outside. It wasn't.`,
+    `Twelve-to-six curve. ${bn} swings over it.`,
+  ];
+  const GB=[
+    `${bn} chops one to ${rif}, who fields it cleanly and fires across. Got him.`,
+    `Soft roller to ${rif} — easy chance, routine groundout.`,
+    `${bn} beats one into the ground. ${rif} charges hard, barehand, fires — out by a step!`,
+    `Weak grounder back to the mound. ${pitcher} hops off, flips to first. Easy.`,
+    `${rif} gloves the tricky bouncer deep in the hole — LONG throw — JUST IN TIME! HOLY COW WHAT A PLAY!`,
+    `${bn} hits a sharp two-hopper at ${rif}, who gobbles it up and fires across.`,
+    `Routine ground ball to the left side. ${rif} to first, one away.`,
+    `${bn} rolls over on a sinker — weak grounder to ${rif}, no chance.`,
+    `Hard smash right at ${rif} — deflects off the glove — he scrambles, recovers, and GUNS him down! Bobbled but still got it there!`,
+    `${bn} punches a slow roller down the line. ${rif} charges, BAREHAND, fires — bang bang, he's out!`,
+    `Ground ball up the middle — ${rif} ranges far to his right, backhands it, and makes the long throw in time. Outstanding.`,
+    `Weak tap back to the mound. ${pitcher} fields it himself. Toss to first.`,
+  ];
+  const FB=[
+    `High fly to ${rof}, who drifts back and squeezes it. Routine out.`,
+    `${bn} lifts one to medium depth. ${rof} calls everyone off and makes the catch.`,
+    `Lazy can of corn to ${rof}. He settles under it. Easy.`,
+    `${bn} pops it up. ${rof} takes it on the run.`,
+    `Deep drive to the warning track — ${rof} is there! He hauls it in at the wall!`,
+    `Towering pop fly — everybody watches it come down. ${rof} makes the basket catch.`,
+    `${bn} gets under it. Fly ball, straightaway center. ${rof} takes it.`,
+    `High arcing fly ball to left. ${rof} takes three steps back, two steps in, makes the catch.`,
+    `${bn} lofts one foul into the corner — ${rof} sprints over, DIVES, and makes the grab! WHAT A PLAY!`,
+    `That ball is SMOKED — ${rof} is going back, back… he leaps at the wall — ROBS HIM! Unbelievable catch!`,
+    `Sinking liner to right — ${rof} charges hard, full extension DIVE — he catches it just before it hits the turf!`,
+  ];
+
+  // HR — grand slam and multi-HR special cases
+  let HR_;
+  if(basesLoaded){
+    HR_=[
+      `GRAND SLAM! ${bn} CRUSHES IT! All four runners come around! The place is going absolutely INSANE!`,
+      `IT'S A GRAND SALAMI! ${bn} GETS ALL OF IT — DEEP, DEEP, GONE! FOUR RUNS SCORE!`,
+      `${bn} SENDS IT INTO ORBIT! GRAND SLAM! He can barely contain himself rounding the bases!`,
+      `${pitcher} HUNG IT and ${bn} DID NOT MISS. GRAND SLAM! Four runs in one swing! WOW!`,
+      `THE BASES WERE LOADED AND ${bn.toUpperCase()} MADE THEM PAY. GRAND SLAM. BALLGAME CHANGING SWING!`,
+    ];
+  } else if(isMultiHR){
+    HR_=[
+      `${bn} HAS DONE IT AGAIN! Another homer! You can't keep pitching to this guy!`,
+      `TWO home runs for ${bn} today! ${pitcher} hangs it and ${bn} says thank you very much. GONE!`,
+      `${bn} goes deep AGAIN! Multiple home runs in one game — this man is on FIRE!`,
+      `Are you KIDDING me?! ${bn} with his second home run today! Someone stop this man!`,
+      `Multi-homer game for ${bn}! That ball is out of here and he KNEW it off the bat!`,
+    ];
+  } else {
+    HR_=[
+      `${bn} gets all of it — that ball is GONE. Back, back, GONE!`,
+      `He CRUSHES it to the opposite field. Watch that one leave. HOME RUN, ${bn}!`,
+      `${pitcher} hangs a breaking ball and ${bn} does NOT miss. Sayonara.`,
+      `No doubt about it. Off the façade. That shot is DEEP and it is GONE.`,
+      `${bn} turns on the inside fastball and sends it into the seats. Bye bye.`,
+      `A MOONSHOT from ${bn}! He knew it off the bat. Stands and watches it go.`,
+      `THAT is a NO-DOUBTER. ${bn} flips the bat, stares at ${pitcher}, and trots.`,
+      `${pitcher} tried to sneak a fastball by him. ${bn} did not appreciate that. GONE.`,
+      `${bn} waits on the changeup and absolutely DESTROYS it. Upper deck. Wow.`,
+      `The crowd is on its feet — and the ball is OUT OF HERE. Home run, ${bn}!`,
+    ];
+  }
+
+  const BB_=[
+    `${pitcher} misses with four straight. ${bn} takes the free pass.`,
+    `Ball four. ${pitcher} couldn't find the zone. ${bn} trots to first.`,
+    `Full count, and it's low and away. Walk. ${bn} flips his bat.`,
+    `${pitcher} nibbles too much and issues the walk. ${bn} is on.`,
+    `${bn} works a full count and lays off a tough pitch. Ball four!`,
+    `${pitcher} falls behind 3-0 and never recovers. Base on balls.`,
+    `Four wide ones. ${pitcher} has lost the zone. ${bn} takes first.`,
+  ];
+  const H1=[
+    `${bn} slaps one through the left side. He's on with a single.`,
+    `Line drive single up the middle — ${bn} is aboard.`,
+    `${bn} punches an opposite-field single past ${rif}. On base!`,
+    `Seeing-eye grounder through the right side. Hit, ${bn}.`,
+    `${bn} loops a soft liner just over ${rif}'s reach. Single.`,
+    `Bloop single to shallow right — nobody could get to it. ${bn} is on.`,
+    `Sharp knock right up the middle. Clean single, ${bn}.`,
+    `${bn} spoils three two-strike pitches and finally pokes one the other way. Single.`,
+    `Infield single! ${bn} beats it out with a heads-down sprint to first. Close play — SAFE!`,
+    `${bn} lashes a line drive that kicks off ${rif}'s glove — they rule it a HIT.`,
+  ];
+  const H2=[
+    `${bn} rips one into the gap in right-center. He's in with a double.`,
+    `Line drive off the wall! ${bn} hustles in standing up.`,
+    `${bn} drills it down the left-field line — it's fair! Double!`,
+    `Two-hopper into the corner, ${rof} can't cut it off. ${bn} slides in with a double.`,
+    `SCORCHED — gap shot, right-center. ${bn} makes the turn and pulls up at second.`,
+    `${bn} sends one over the outfield's head. Rolling to the wall. He's in with a double.`,
+    `Double off the wall! That caromed funny and ${rof} couldn't handle it.`,
+  ];
+  const H3=[
+    `${bn} laces one into the left-center gap and never stops running. TRIPLE!`,
+    `Deep drive to right — it gets by ${rof}! ${bn} is rounding second… going to THIRD! TRIPLE!`,
+    `${bn} legs out a three-bagger on a ball that caroms off the wall at a crazy angle.`,
+    `STAND-UP TRIPLE! ${bn} never broke stride from first to third. Blazing speed!`,
+    `Into the right-field corner — ${rof} bobbles it! ${bn} pulls up at third. Three-bagger!`,
+  ];
+  const SAC_=[
+    `${bn} lifts a deep fly to ${rof}. ${r3ln||'the runner'} tags and scores. Sacrifice fly.`,
+    `High fly ball — ${rof} settles under it. ${r3ln||'the runner'} tags at third and scores. Sac fly, ${bn}.`,
+    `${bn} gets enough of it. Deep fly to ${rof}. ${r3ln||'the runner'} tags — scores easily. That'll do it.`,
+    `Sacrifice fly to ${rof}. ${r3ln||'the runner'} had a big lead and scores standing up.`,
+  ];
+  const DP_=[
+    `${bn} hits a tailor-made double-play ball to ${rif}. Flips to ${rif2}, relay to first. Two!`,
+    `${rif} goes to second for one, back to first — double play! Perfect footwork around the bag.`,
+    `Hard shot at ${rif}, who starts the twin killing. Inning over, just like that.`,
+    `${bn} grounds into a 6-4-3. ${rif} to ${rif2} and back to first. Textbook.`,
+    `DOUBLE PLAY — ${rif} backhands it, fires to second, back to first. They got two! Huge!`,
+    `${bn} hits it right at ${rif} — double play was almost automatic.`,
+    `Slow roller but ${rif} charges, shovels to second, and ${rif2} somehow gets it back to first. GOT TWO! That should NOT have been a double play!`,
+  ];
+
+  switch(outcome){
+    case 'K':  return pick(K);
+    case 'GB': return pick(GB);
+    case 'FB': return pick(FB);
+    case 'HR': return pick(HR_);
+    case 'BB': return pick(BB_);
+    case '1B': return pick(H1)+speedBonus;
+    case '2B': return pick(H2);
+    case '3B': return pick(H3);
+    case 'SAC':return r3ln?pick(SAC_):`${bn} lifts a fly ball deep enough. Runner scores.`;
+    case 'DP': return pick(DP_);
+    default:   return '';
+  }
+}
+
+
+function showPlayDesc(text){
+  const el=document.getElementById('play-descriptor');
+  const tel=document.getElementById('play-desc-text');
+  if(!text){el.style.display='none';return;}
+  tel.textContent=text;el.style.display='block';
+}
+
+// ══════════════════════════════════════
+// K SIGN BOARD
+// ══════════════════════════════════════
+function renderKSigns(){
+  const board=document.getElementById('k-sign-board');
+  const row=document.getElementById('k-sign-row');
+  const label=document.getElementById('k-board-label');
+  const n=G.homeKs;
+  if(n===0){board.style.display='none';return;}
+  board.style.display='block';
+  label.textContent=`${G.homeAbbr} K SIGNS (${n})`;
+  row.innerHTML='';
+  for(let i=0;i<n;i++){
+    const k=document.createElement('div');
+    k.style.cssText='background:#1a0000;border:1px solid var(--red);color:var(--red);font-family:"Courier New",monospace;font-weight:700;font-size:13px;width:22px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:3px';
+    k.textContent='K';
+    row.appendChild(k);
+  }
+  // also mini k signs in scorebug center
+  const mini=document.getElementById('k-signs');
+  mini.innerHTML='';
+  for(let i=0;i<Math.min(n,9);i++){
+    const k=document.createElement('div');
+    k.style.cssText='background:#3b0f0f;color:#f87171;font-size:8px;font-weight:700;width:8px;height:10px;display:flex;align-items:center;justify-content:center;border-radius:1px;font-family:"Courier New",monospace';
+    k.textContent='K';
+    mini.appendChild(k);
+  }
+}
+
+// ══════════════════════════════════════
+// DECISION MODAL
+// ══════════════════════════════════════
+function showDecision(title,btns,ruleNote){
+  document.getElementById('decision-title').textContent=title;
+  const note=document.getElementById('decision-rule-note');
+  if(ruleNote){note.textContent=ruleNote;note.style.display='block';}
+  else{note.style.display='none';}
+  const c=document.getElementById('decision-btns');
+  c.innerHTML='';
+  btns.forEach(b=>{
+    const btn=document.createElement('button');
+    btn.className='d-btn '+b.cls;btn.textContent=b.label;btn.onclick=b.fn;
+    c.appendChild(btn);
+  });
+  document.getElementById('decision-modal').style.display='flex';
+}
+function closeDecision(){document.getElementById('decision-modal').style.display='none';renderAll();}
+
+// ══════════════════════════════════════
+// SPECIAL BUTTON STATES
+// ══════════════════════════════════════
+function updateSpecialButtons(){
+  // SB/CS only available with a runner on 1st and 2nd base open
+  const stealOk = G.bases[0] && !G.bases[1];
+  ['btn-sb','btn-cs'].forEach(id=>{
+    const b=document.getElementById(id);
+    if(!b) return;
+    b.style.opacity = stealOk ? '1' : '0.28';
+    b.style.cursor  = stealOk ? 'pointer' : 'not-allowed';
+  });
+  // Highlight SB when a Speed A runner should be going
+  const sb=document.getElementById('btn-sb');
+  if(sb){
+    const r1=G.baseRunners[0];
+    const mustGo = stealOk && r1 && playerSpeed(r1)==='A';
+    sb.style.boxShadow = mustGo ? '0 0 10px rgba(167,139,250,.65)' : 'inset 0 1px 0 rgba(255,255,255,.05)';
+  }
+}
+
+// ══════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════
+function renderAll(){
+  // Scorebug
+  document.getElementById('bug-away').textContent=G.awayAbbr;
+  document.getElementById('bug-home').textContent=G.homeAbbr;
+  document.getElementById('bug-away-score').textContent=G.awayScore;
+  document.getElementById('bug-home-score').textContent=G.homeScore;
+  document.getElementById('bug-away-rec').textContent=G.awayRec+' · '+G.awayRank;
+  document.getElementById('bug-home-rec').textContent=G.homeRec+' · '+G.homeRank;
+  document.getElementById('bug-inning').textContent=(G.isTop?'▲':'▼')+' '+G.inning;
+  document.getElementById('dot1').className='out-dot'+(G.outs>=1?' on':'');
+  document.getElementById('dot2').className='out-dot'+(G.outs>=2?' on':'');
+  renderKSigns();
+  renderSeriesBug();
+
+  // Matchup bar
+  document.getElementById('mb-pitcher').textContent=G.currentPitcherName||'—';
+  const b=currentBatter();
+  document.getElementById('mb-batter').textContent=b?b.name:'—';
+
+  // Pitcher bug
+  const p=cp();
+  const overLimit=G.currentPitcherOverLimit||false;
+  const pitcherCard=document.getElementById('pitcher-bug-card');
+  if(pitcherCard){
+    pitcherCard.style.borderColor=overLimit?'#f87171':'var(--border)';
+    pitcherCard.style.boxShadow=overLimit?'0 0 10px rgba(248,113,113,.3)':'none';
+  }
+  const badge=document.getElementById('p-overlimit-badge');
+  if(badge) badge.style.display=overLimit?'block':'none';
+  document.getElementById('p-name').textContent=G.currentPitcherName||'—';
+  const ipFull=Math.floor((p.gameOuts||0)/3);
+  const ipFrac=(p.gameOuts||0)%3;
+  document.getElementById('p-ip').textContent=ipFull+'.'+ipFrac;
+  document.getElementById('p-k').textContent=p.gameK||0;
+  document.getElementById('p-h').textContent=p.gameH||0;
+  document.getElementById('p-bb').textContent=p.gameBB||0;
+  document.getElementById('p-hr').textContent=p.gameHR||0;
+  document.getElementById('p-er').textContent=p.gameER||0;
+  document.getElementById('p-era').textContent=p.era||'—';
+  document.getElementById('p-whip').textContent=p.whip||'—';
+  document.getElementById('p-wl').textContent=p.wl||'—';
+  document.getElementById('p-hrs').textContent=p.hrS||'—';
+
+  // Batter bug
+  if(b){
+    document.getElementById('b-name').textContent=b.name;
+    const idx=currentBatterIdx();
+    const spdColor=b.spd==='A'?'#4ade80':b.spd==='B'?'var(--gold)':'#f87171';
+    const spEl=document.getElementById('b-slot-pos');
+    spEl.textContent='#'+(idx+1)+(b.pos?' · '+b.pos:'')+(b.spd&&b.spd!=='?'?' · SPD '+b.spd:'');
+    spEl.style.color=spdColor;
+    document.getElementById('b-game-line').textContent=b.gameABs.length?gameLine(b):'';
+    const log=document.getElementById('ab-log');
+    if(b.gameABs.length===0){log.innerHTML='<span style="color:var(--dim);font-size:11px">No ABs yet</span>';}
+    else{log.innerHTML=b.gameABs.map(ab=>{
+      let cls='chip-out';
+      if(ab==='K')cls='chip-k';else if(ab==='BB')cls='chip-bb';
+      else if(ab==='HR')cls='chip-hr';else if(ab==='SB')cls='chip-sb';
+      else if(['1B','2B','3B'].includes(ab))cls='chip-hit';
+      return`<div class="ab-chip ${cls}">${ab}</div>`;
+    }).join('');}
+    document.getElementById('b-avg').textContent=b.avg;
+    document.getElementById('b-hr').textContent=b.hr;
+    document.getElementById('b-rbi').textContent=b.rbi;
+    document.getElementById('b-r').textContent=b.r;
+    document.getElementById('b-sb').textContent=b.sb+(b.gameSB>0?` (+${b.gameSB})`:'');
+    document.getElementById('b-obp').textContent=b.obp;
+    document.getElementById('b-ops').textContent=b.ops;
+  }
+
+  // Diamond runners
+  [1,2,3].forEach(i=>{
+    const on=G.bases[i-1];
+    const name=G.baseRunners[i-1];
+    const spd=name?playerSpeed(name):'';
+    const dotFill=on?(spd==='A'?'#4ade80':spd==='B'?'#f4d03f':'#f87171'):'#f4d03f';
+    const txtFill=spd==='A'?'#052e16':spd==='B'?'#1a0e00':'#450a0a';
+    document.getElementById('r'+i).setAttribute('opacity',on?'1':'0');
+    document.getElementById('r'+i).setAttribute('fill',dotFill);
+    const spdEl=document.getElementById('r'+i+'-spd');
+    spdEl.textContent=on?(spd||'?'):'';
+    spdEl.setAttribute('opacity',on?'1':'0');
+    spdEl.setAttribute('fill',txtFill);
+    // Name label — last name truncated to 6 chars
+    const nameEl=document.getElementById('r'+i+'-name');
+    const shortName=name?lastName(name).slice(0,7):'';
+    nameEl.textContent=on?shortName:'';
+    nameEl.setAttribute('opacity',on?'1':'0');
+  });
+  document.getElementById('base1').setAttribute('fill',G.bases[0]?'#4d3a00':'#8b7355');
+  document.getElementById('base2').setAttribute('fill',G.bases[1]?'#4d3a00':'#8b7355');
+  document.getElementById('base3').setAttribute('fill',G.bases[2]?'#4d3a00':'#8b7355');
+
+  // Fielding scores on the SVG field — show DEFENSIVE team
+  const defSide=G.isTop?'home':'away';
+  const df=G[defSide+'Fielding']||{c:0,inf:0,of:0};
+  const setFld=(id,val,label)=>{
+    const el=document.getElementById(id);
+    el.textContent=`${label}:${val}`;
+    el.setAttribute('opacity','0.85');
+  };
+  setFld('fld-c',df.c,'C');
+  setFld('fld-if',df.inf,'IF');
+  setFld('fld-of',df.of,'OF');
+
+  updateSpecialButtons();
+  // Speed A steal reminder
+  const r=document.getElementById('spd-a-reminder');
+  if(r){
+    const r1name=G.baseRunners[0];
+    const showReminder=r1name&&playerSpeed(r1name)==='A'&&!G.bases[1];
+    r.style.display=showReminder?'block':'none';
+  }
+  // Persist state after every render so mobile resume works
+  saveGameState();
+}
+
+// ══════════════════════════════════════
+// STAT COMPUTATION
+// ══════════════════════════════════════
+function computeHitterStats(player){
+  const abs=player.gameABs;
+  const hits=abs.filter(a=>['1B','2B','3B','HR'].includes(a)).length;
+  const doubles=abs.filter(a=>a==='2B').length;
+  const triples=abs.filter(a=>a==='3B').length;
+  const hr=abs.filter(a=>a==='HR').length;
+  const bb=abs.filter(a=>a==='BB').length;
+  const sac=abs.filter(a=>a==='SAC').length;
+  const fb=abs.filter(a=>a==='FB').length;
+  const dp=abs.filter(a=>a==='DP').length;
+  const k=abs.filter(a=>a==='K').length;
+  const pa=abs.length;
+  const ab=pa-bb-sac;
+  const avg=ab>0?(hits/ab).toFixed(3):'.000';
+  const obpDen=ab+bb+sac;
+  const obp=obpDen>0?((hits+bb)/obpDen).toFixed(3):'.000';
+  const tb=hits+doubles+(triples*2)+(hr*3);
+  const slg=ab>0?(tb/ab).toFixed(3):'.000';
+  const ops=ab>0?((parseFloat(obp)+parseFloat(slg)).toFixed(3)):'.000';
+  return{avg,obp,slg,ops,h:hits,'2b':doubles,'3b':triples,hr,rbi:player.gameRBI,r:player.gameR,sb:player.gameSB,ab,pa,bb,k,fb,dp,sac,gg:player.gameGG||0};
+}
+function computePitcherLine(name,ps,dec){
+  const ipFull=Math.floor((ps.gameOuts||0)/3);
+  const ipFrac=(ps.gameOuts||0)%3;
+  const ip=parseFloat(`${ipFull}.${ipFrac}`);
+  const era=(ps.gameOuts||0)>0?((ps.gameER||0)*27/(ps.gameOuts||1)).toFixed(2):'—';
+  const whip=(ps.gameOuts||0)>0?(((ps.gameH||0)+(ps.gameBB||0))/(ip||1)).toFixed(2):'—';
+  return{name,ip:`${ipFull}.${ipFrac}`,w:dec==='W'?1:0,l:dec==='L'?1:0,sv:dec==='SV'?1:0,k:ps.gameK||0,h:ps.gameH||0,bb:ps.gameBB||0,hr:ps.gameHR||0,er:ps.gameER||0,era,whip,app:1};
+}
+
+// ══════════════════════════════════════
+// END GAME MODAL
+// ══════════════════════════════════════
+let pitcherDecisions={};
+function openEndGame(){
+  document.getElementById('eg-score-display').textContent=`${G.awayAbbr} ${G.awayScore}  ·  ${G.homeScore} ${G.homeAbbr}`;
+  pitcherDecisions={};
+  const list=document.getElementById('eg-pitcher-list');
+  list.innerHTML='';
+  const appeared=Object.entries(G.pitcherStats);
+  if(appeared.length===0){list.innerHTML='<div style="color:var(--dim);font-size:11px">No pitchers recorded yet</div>';}
+  else{appeared.forEach(([name,ps])=>{
+    pitcherDecisions[name]=null;
+    const ipFull=Math.floor((ps.gameOuts||0)/3);const ipFrac=(ps.gameOuts||0)%3;
+    const row=document.createElement('div');row.className='pitcher-dec-row';
+    row.innerHTML=`<div class="pitcher-dec-name">${name}</div><div class="pitcher-dec-ip">${ipFull}.${ipFrac} IP</div>`+
+      `<button class="dec-tog" id="dec-w-${name.replace(/\s/g,'_')}" onclick="toggleDec('${name}','W')">W</button>`+
+      `<button class="dec-tog" id="dec-l-${name.replace(/\s/g,'_')}" onclick="toggleDec('${name}','L')">L</button>`+
+      `<button class="dec-tog" id="dec-sv-${name.replace(/\s/g,'_')}" onclick="toggleDec('${name}','SV')">SV</button>`;
+    list.appendChild(row);
+  });}
+  document.getElementById('eg-status').textContent='';
+  document.getElementById('endgame-modal').style.display='flex';
+  restoreScriptUrl();
+}
+function closeEndGame(){document.getElementById('endgame-modal').style.display='none';}
+function toggleDec(name,dec){
+  const cur=pitcherDecisions[name];
+  pitcherDecisions[name]=(cur===dec)?null:dec;
+  const slug=name.replace(/\s/g,'_');
+  ['W','L','SV'].forEach(d=>{
+    const btn=document.getElementById(`dec-${d.toLowerCase()}-${slug}`);
+    if(!btn) return;
+    btn.className='dec-tog';
+    if(pitcherDecisions[name]===d) btn.classList.add(`${d.toLowerCase()}-on`);
+  });
+}
+
+// ══════════════════════════════════════
+// GAME STATE PERSISTENCE
+// ══════════════════════════════════════
+const SAVE_KEY = 'showdown_active_game';
+
+function saveGameState(){
+  try{
+    const save = {
+      // Meta
+      awayAbbr:G.awayAbbr, homeAbbr:G.homeAbbr, gameNum:G.gameNum,
+      awayRec:G.awayRec, homeRec:G.homeRec, awayRank:G.awayRank, homeRank:G.homeRank,
+      // Score / inning
+      awayScore:G.awayScore, homeScore:G.homeScore,
+      inning:G.inning, isTop:G.isTop, outs:G.outs,
+      bases:G.bases, baseRunners:G.baseRunners,
+      // Batting
+      awayBatterIdx:G.awayBatterIdx, homeBatterIdx:G.homeBatterIdx,
+      homeKs:G.homeKs, walkoffTriggered:G.walkoffTriggered,
+      // Pitcher stats
+      pitcherStats:G.pitcherStats, currentPitcherName:G.currentPitcherName,
+      awayScript:G.awayScript, homeScript:G.homeScript,
+      // Lineups (only game stats — season stats get re-pulled on resume)
+      awayLineup:G.awayLineup.map(p=>({
+        name:p.name, pos:p.pos, spd:p.spd, fld:p.fld,
+        avg:p.avg, obp:p.obp, ops:p.ops, hr:p.hr, rbi:p.rbi, r:p.r, sb:p.sb,
+        gameABs:p.gameABs, gameRBI:p.gameRBI, gameR:p.gameR, gameSB:p.gameSB, gameGG:p.gameGG||0
+      })),
+      homeLineup:G.homeLineup.map(p=>({
+        name:p.name, pos:p.pos, spd:p.spd, fld:p.fld,
+        avg:p.avg, obp:p.obp, ops:p.ops, hr:p.hr, rbi:p.rbi, r:p.r, sb:p.sb,
+        gameABs:p.gameABs, gameRBI:p.gameRBI, gameR:p.gameR, gameSB:p.gameSB, gameGG:p.gameGG||0
+      })),
+      // Fielding
+      awayFielding:G.awayFielding, homeFielding:G.homeFielding,
+      // Game log (store without stateSnap to keep size down)
+      gameLog:G.gameLog.map(e=>({
+        outcome:e.outcome, batterName:e.batterName, desc:e.desc,
+        stats:e.stats, inning:e.inning, half:e.half,
+        scoreAway:e.scoreAway, scoreHome:e.scoreHome
+      })),
+      // Series
+      seriesId:G.seriesId, seriesAwayWins:G.seriesAwayWins,
+      seriesHomeWins:G.seriesHomeWins, seriesResults:G.seriesResults,
+      // Pending game info for resume display
+      pendingGame:_pendingGame,
+      savedAt: Date.now(),
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+  } catch(err){
+    console.warn('Could not save game state:', err);
+  }
+}
+
+function clearGameState(){
+  try{ localStorage.removeItem(SAVE_KEY); } catch{}
+}
+
+function checkForSavedGame(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return;
+    const save = JSON.parse(raw);
+    if(!save.awayAbbr || !save.homeAbbr) return;
+
+    // Show resume banner on setup screen
+    const ageMin = Math.round((Date.now() - (save.savedAt||0)) / 60000);
+    const ageStr = ageMin < 60 ? `${ageMin}m ago` : `${Math.round(ageMin/60)}h ago`;
+    const score = `${save.awayAbbr} ${save.awayScore} – ${save.homeScore} ${save.homeAbbr}`;
+    const inningStr = `${save.isTop?'▲':'▼'}${save.inning}`;
+
+    const banner = document.createElement('div');
+    banner.id = 'resume-banner';
+    banner.style.cssText = 'background:#1a2535;border:1px solid var(--gold);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;margin-bottom:0';
+    banner.innerHTML =
+      `<div style="font-family:var(--ui-font);font-size:10px;font-weight:700;color:var(--gold);letter-spacing:2px;text-transform:uppercase">Game In Progress</div>`+
+      `<div style="font-family:var(--ui-font);font-size:16px;font-weight:700;color:var(--text)">${score} <span style="color:var(--dim);font-size:12px">${inningStr} · ${ageStr}</span></div>`+
+      `<div style="display:flex;gap:8px">`+
+        `<button onclick="resumeGame()" style="flex:2;background:var(--gold);border:none;border-radius:7px;color:#000;font-family:var(--ui-font);font-size:15px;font-weight:700;padding:10px;letter-spacing:1px;text-transform:uppercase">Resume</button>`+
+        `<button onclick="discardSave()" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--dim);font-family:var(--ui-font);font-size:13px;font-weight:600;padding:10px">Discard</button>`+
+      `</div>`;
+
+    const screen = document.getElementById('setup-screen');
+    screen.insertBefore(banner, screen.firstChild);
+  } catch(err){
+    console.warn('Could not load saved game:', err);
+  }
+}
+
+function resumeGame(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    const save = JSON.parse(raw);
+
+    // Restore G
+    Object.assign(G, {
+      awayAbbr:save.awayAbbr, homeAbbr:save.homeAbbr, gameNum:save.gameNum,
+      awayRec:save.awayRec, homeRec:save.homeRec,
+      awayRank:save.awayRank, homeRank:save.homeRank,
+      awayScore:save.awayScore, homeScore:save.homeScore,
+      inning:save.inning, isTop:save.isTop, outs:save.outs,
+      bases:save.bases, baseRunners:save.baseRunners,
+      awayBatterIdx:save.awayBatterIdx, homeBatterIdx:save.homeBatterIdx,
+      homeKs:save.homeKs||0, walkoffTriggered:save.walkoffTriggered||false,
+      pitcherStats:save.pitcherStats, currentPitcherName:save.currentPitcherName,
+      awayScript:save.awayScript, homeScript:save.homeScript,
+      awayLineup:save.awayLineup, homeLineup:save.homeLineup,
+      awayFielding:save.awayFielding, homeFielding:save.homeFielding,
+      gameLog:save.gameLog||[],
+      seriesId:save.seriesId, seriesAwayWins:save.seriesAwayWins||0,
+      seriesHomeWins:save.seriesHomeWins||0, seriesResults:save.seriesResults||[],
+      seasonStats:{}, pitcherSeasonStats:{},
+    });
+    if(save.pendingGame) _pendingGame = save.pendingGame;
+
+    applyTeamColors(G.homeAbbr);
+    showScreen('game-screen');
+    renderAll();
+    renderGameLog();
+    toast('▶ Game resumed');
+
+    // Re-pull season stats in background
+    const scriptUrl = localStorage.getItem('showdown_script_url');
+    if(scriptUrl) pullSeasonStats(scriptUrl);
+
+  } catch(err){
+    toast('Could not resume — starting fresh');
+    clearGameState();
+    console.error('Resume error:', err);
+  }
+}
+
+function discardSave(){
+  clearGameState();
+  const banner = document.getElementById('resume-banner');
+  if(banner) banner.remove();
+  toast('Game discarded');
+}
+
+// ══════════════════════════════════════
+// APPS SCRIPT LOGGING
+// ══════════════════════════════════════
+async function testScriptConnection(){
+  const url=document.getElementById('eg-script-url').value.trim();
+  const status=document.getElementById('eg-conn-status');
+  if(!url){status.textContent='● paste URL first';status.style.color='var(--red)';return;}
+  status.textContent='● testing…';status.style.color='var(--dim)';
+  try{
+    await fetch(url,{method:'GET',mode:'no-cors'});
+    status.textContent='● connected ✓';status.style.color='#4ade80';
+    localStorage.setItem('showdown_script_url',url);
+  }catch(err){status.textContent='● failed — check URL';status.style.color='var(--red)';}
+}
+
+function egStatus(msg,color='var(--dim)'){
+  const el=document.getElementById('eg-status');
+  el.style.color=color;el.textContent=msg;
+}
+
+async function logToSheets(){
+  const url=document.getElementById('eg-script-url').value.trim();
+  if(!url){egStatus('⚠ Paste your Apps Script URL first','var(--red)');return;}
+  const tabSched=document.getElementById('eg-tab-sched').value.trim()||'Schedule';
+  const tabTeams=document.getElementById('eg-tab-teams').value.trim()||'Teams';
+  const tabHit=document.getElementById('eg-tab-hit').value.trim()||'Hitters';
+  const tabPitch=document.getElementById('eg-tab-pitch').value.trim()||'Pitchers';
+  const btn=document.getElementById('eg-log-btn');
+  btn.textContent='LOGGING…';btn.disabled=true;
+  egStatus('Building stats…','var(--dim)');
+  const gameDate=new Date().toLocaleDateString('en-US');
+  const gameNum=_pendingGame?_pendingGame.num:'?';
+  const homeResult=G.homeScore>G.awayScore?'W':G.homeScore<G.awayScore?'L':'T';
+  const awayResult=homeResult==='W'?'L':homeResult==='L'?'W':'T';
+  const schedRow=[gameNum,G.gameNum,gameDate,G.homeAbbr,G.homeScore,G.awayAbbr,G.awayScore,
+    homeResult==='W'?G.homeAbbr:G.awayAbbr,homeResult==='W'?G.awayAbbr:G.homeAbbr];
+  const teamRows=[
+    [gameNum,gameDate,G.homeAbbr,'Home',G.homeScore,G.awayScore,homeResult,document.getElementById('home-rank').value],
+    [gameNum,gameDate,G.awayAbbr,'Away',G.awayScore,G.homeScore,awayResult,document.getElementById('away-rank').value],
+  ];
+  const hitterRows=[];
+  [[G.homeLineup,G.homeAbbr],[G.awayLineup,G.awayAbbr]].forEach(([lineup,abbr])=>{
+    lineup.forEach((p,i)=>{
+      if(p.gameABs.length===0) return;
+      const s=computeHitterStats(p);
+      hitterRows.push([gameNum,gameDate,abbr,i+1,p.name,p.pos||'',
+        s.avg,s.obp,s.ops,s.h,s['2b'],s['3b'],s.hr,s.rbi,s.r,s.sb,s.ab,s.pa,s.bb,s.k,s.fb,s.dp,s.sac,s.gg]);
+    });
+  });
+  const pitcherRows=[];
+  Object.entries(G.pitcherStats).forEach(([name,ps])=>{
+    const dec=pitcherDecisions[name]||null;
+    let team='?';
+    if(G.homeScript.includes(name)) team=G.homeAbbr;
+    else if(G.awayScript.includes(name)) team=G.awayAbbr;
+    const pl=computePitcherLine(name,ps,dec);
+    pitcherRows.push([gameNum,gameDate,team,name,pl.app,pl.w,pl.l,pl.sv,pl.ip,pl.k,pl.h,pl.bb,pl.hr,pl.er,pl.era,pl.whip]);
+  });
+  const payload={
+    Schedule:{tab:tabSched,rows:[schedRow]},
+    Teams:{tab:tabTeams,rows:teamRows},
+    Hitters:{tab:tabHit,rows:hitterRows},
+    Pitchers:{tab:tabPitch,rows:pitcherRows},
+  };
+  egStatus('Sending to Sheets…','var(--accent)');
+  // Record series result if not already done (walkoff does it in dismissWalkoff)
+  if(!G.walkoffTriggered) recordSeriesResult();
+  try{
+    await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+    egStatus(`✓ Game ${gameNum} logged — ${hitterRows.length} hitters · ${pitcherRows.length} pitchers`,'#4ade80');
+    btn.textContent='✓ LOGGED';btn.style.background='#14532d';
+    localStorage.setItem('showdown_script_url',url);
+    clearGameState(); // game is done, wipe the save
+    setTimeout(()=>{closeEndGame();btn.textContent='LOG TO SHEETS ▶';btn.style.background='#166534';btn.disabled=false;showScreen('setup-screen');},2200);
+  }catch(err){
+    egStatus(`✗ Failed: ${err.message}`,'var(--red)');
+    btn.textContent='LOG TO SHEETS ▶';btn.disabled=false;
+  }
+}
+// ══════════════════════════════════════
+// MANUAL BACKUP EXPORT
+// ══════════════════════════════════════
+function buildBackupText(){
+  const gameDate=new Date().toLocaleDateString('en-US');
+  const gameNum=_pendingGame?_pendingGame.num:'?';
+  const homeResult=G.homeScore>G.awayScore?'W':G.homeScore<G.awayScore?'L':'T';
+  const awayResult=homeResult==='W'?'L':homeResult==='L'?'W':'T';
+  const L=[];
+  L.push('=== SHOWDOWN GAME '+gameNum+' ('+gameDate+') ===');
+  L.push(G.awayAbbr+' '+G.awayScore+' @ '+G.homeAbbr+' '+G.homeScore);
+  L.push('');
+  L.push('--- SCHEDULE ---');
+  L.push([gameNum,G.gameNum,gameDate,G.homeAbbr,G.homeScore,G.awayAbbr,G.awayScore,
+    homeResult==='W'?G.homeAbbr:G.awayAbbr,homeResult==='W'?G.awayAbbr:G.homeAbbr].join('\t'));
+  L.push('');
+  L.push('--- TEAMS ---');
+  L.push([gameNum,gameDate,G.homeAbbr,'Home',G.homeScore,G.awayScore,homeResult,G.homeRank].join('\t'));
+  L.push([gameNum,gameDate,G.awayAbbr,'Away',G.awayScore,G.homeScore,awayResult,G.awayRank].join('\t'));
+  L.push('');
+  L.push('--- HITTERS ---');
+  L.push('Game#\tDate\tTeam\tSlot\tName\tPos\tAVG\tOBP\tOPS\tH\t2B\t3B\tHR\tRBI\tR\tSB\tAB\tPA\tBB\tK\tFB\tDP\tSAC\tGG');
+  [[G.homeLineup,G.homeAbbr],[G.awayLineup,G.awayAbbr]].forEach(function(pair){
+    const lineup=pair[0], abbr=pair[1];
+    lineup.forEach(function(p,i){
+      if(p.gameABs.length===0) return;
+      const s=computeHitterStats(p);
+      L.push([gameNum,gameDate,abbr,i+1,p.name,p.pos||'',s.avg,s.obp,s.ops,s.h,s['2b'],s['3b'],s.hr,
+        s.rbi,s.r,s.sb,s.ab,s.pa,s.bb,s.k,s.fb,s.dp,s.sac,s.gg].join('\t'));
+    });
+  });
+  L.push('');
+  L.push('--- PITCHERS ---');
+  L.push('Game#\tDate\tTeam\tName\tAPP\tW\tL\tSV\tIP\tK\tH\tBB\tHR\tER\tERA\tWHIP');
+  Object.keys(G.pitcherStats).forEach(function(name){
+    const ps=G.pitcherStats[name];
+    const dec=pitcherDecisions[name]||null;
+    let team='?';
+    if(G.homeScript.indexOf(name)>-1) team=G.homeAbbr;
+    else if(G.awayScript.indexOf(name)>-1) team=G.awayAbbr;
+    const pl=computePitcherLine(name,ps,dec);
+    L.push([gameNum,gameDate,team,name,pl.app,pl.w,pl.l,pl.sv,pl.ip,pl.k,pl.h,pl.bb,pl.hr,pl.er,pl.era,pl.whip].join('\t'));
+  });
+  return L.join('\n');
+}
+
+function showBackup(){
+  const ta=document.getElementById('eg-backup-text');
+  ta.value=buildBackupText();
+  ta.style.display='block';
+  ta.select();
+  try{
+    navigator.clipboard.writeText(ta.value).then(function(){
+      egStatus('\u2713 Copied to clipboard \u2014 paste it somewhere safe','#4ade80');
+    }).catch(function(){
+      egStatus('Select the text below and copy manually','var(--gold)');
+    });
+  }catch(e){
+    egStatus('Select the text below and copy manually','var(--gold)');
+  }
+}
+
+function restoreScriptUrl(){
+  const saved=localStorage.getItem('showdown_script_url');
+  if(saved){const el=document.getElementById('eg-script-url');if(el&&!el.value) el.value=saved;}
+}
+
+// ══════════════════════════════════════
+// SERIES TRACKER
+// ══════════════════════════════════════
+function loadSeries(seriesId){
+  try{
+    const raw=localStorage.getItem('series_'+seriesId);
+    return raw?JSON.parse(raw):{awayWins:0,homeWins:0,results:[]};
+  }catch{return{awayWins:0,homeWins:0,results:[]};}
+}
+function saveSeries(seriesId,data){
+  try{localStorage.setItem('series_'+seriesId,JSON.stringify(data));}catch{}
+}
+
+function renderSeriesCard(away,home,seriesGame,num){
+  const sc=document.getElementById('series-card');
+  if(seriesGame===1){sc.style.display='none';return;}
+  const seriesFirstGame=num-(seriesGame-1);
+  const sid=`${away}-${home}-${seriesFirstGame}`;
+  const data=loadSeries(sid);
+  sc.style.display='block';
+  document.getElementById('sd-away-abbr').textContent=away;
+  document.getElementById('sd-home-abbr').textContent=home;
+  document.getElementById('sd-away-wins').textContent=data.awayWins;
+  document.getElementById('sd-home-wins').textContent=data.homeWins;
+  document.getElementById('sd-game-label').textContent=`GAME ${seriesGame}`;
+  const prev=data.results[data.results.length-1];
+  if(prev){
+    document.getElementById('sd-prev-results').textContent=
+      `G${prev.g}: ${away} ${prev.awayScore} — ${prev.homeScore} ${home}`;
+  }
+}
+
+function renderScheduleContext(currentNum){
+  const card=document.getElementById('sched-context-card');
+  const rows=document.getElementById('sched-context-rows');
+  if(!card||!rows) return;
+
+  const start=Math.max(1,currentNum-5);
+  const end=Math.min(1215,currentNum+5);
+
+  rows.innerHTML='';
+  for(let n=start;n<=end;n++){
+    const entry=SCHEDULE[n];
+    if(!entry) continue;
+    const{home,away}=entry;
+    const g=((n-1)%3)+1;
+    const isCurrent=(n===currentNum);
+
+    const row=document.createElement('div');
+    row.style.cssText=`
+      display:flex;align-items:center;gap:8px;
+      padding:5px 8px;border-radius:6px;
+      background:${isCurrent?'rgba(245,158,11,.12)':'transparent'};
+      border-left:3px solid ${isCurrent?'var(--gold)':'transparent'};
+      cursor:${isCurrent?'default':'pointer'};
+    `;
+
+    // Check if this game# is a series G1 — group label
+    const seriesLabel=g===1?'':g===2?'·':'··';
+
+    const homeColor=TEAM_COLORS[home]?TEAM_COLORS[home].p:'var(--dim)';
+    const awayColor=TEAM_COLORS[away]?TEAM_COLORS[away].p:'var(--dim)';
+
+    row.innerHTML=
+      `<div style="font-family:var(--num-font);font-size:10px;color:${isCurrent?'var(--gold)':'var(--dim)'};min-width:32px;font-weight:${isCurrent?'700':'400'}">${n}</div>`+
+      `<div style="font-size:9px;color:var(--dim);min-width:10px">${seriesLabel}</div>`+
+      `<div style="flex:1;font-family:var(--ui-font);font-size:13px;font-weight:${isCurrent?'700':'500'};color:${isCurrent?'var(--text)':'var(--dim)'}">`+
+        `<span style="color:${awayColor}">${away}</span>`+
+        `<span style="color:var(--dim);margin:0 5px">@</span>`+
+        `<span style="color:${homeColor}">${home}</span>`+
+      `</div>`+
+      `<div style="font-family:var(--ui-font);font-size:9px;font-weight:600;color:${isCurrent?'var(--gold)':'var(--dim)'};letter-spacing:1px">G${g}</div>`;
+
+    if(!isCurrent){
+      row.onclick=()=>{
+        document.getElementById('game-num-input').value=n;
+        lookupGame();
+        // Scroll to top
+        window.scrollTo({top:0,behavior:'smooth'});
+      };
+      row.onmouseenter=()=>row.style.background='rgba(255,255,255,.04)';
+      row.onmouseleave=()=>row.style.background='transparent';
+    }
+
+    rows.appendChild(row);
+  }
+
+  card.style.display='block';
+}
+
+function recordSeriesResult(){
+  if(!G.seriesId) return;
+  const winner=G.awayScore>G.homeScore?'away':G.homeScore>G.awayScore?'home':'tie';
+  const data=loadSeries(G.seriesId);
+  if(winner==='away') data.awayWins++;
+  else if(winner==='home') data.homeWins++;
+  data.results.push({g:G.gameNum,awayScore:G.awayScore,homeScore:G.homeScore,winner});
+  saveSeries(G.seriesId,data);
+  G.seriesAwayWins=data.awayWins;
+  G.seriesHomeWins=data.homeWins;
+}
+
+function renderSeriesBug(){
+  const el=document.getElementById('bug-series');
+  if(!el) return;
+  const g=G.gameNum;
+  const aw=G.seriesAwayWins,hw=G.seriesHomeWins;
+  if(g===1&&aw===0&&hw===0){el.textContent='';return;}
+  el.textContent=`SER: ${G.awayAbbr} ${aw}–${hw} ${G.homeAbbr} · G${g}`;
+}
+
+// ══════════════════════════════════════
+// WALKOFF DETECTION
+// ══════════════════════════════════════
+function checkWalkoff(runsBefore){
+  // Walkoff: home team is batting (bottom half), game was tied or home was trailing,
+  // home now leads after scoring
+  if(G.isTop) return; // top half can't walkoff
+  if(G.walkoffTriggered) return;
+  const runsAfter=G.homeScore;
+  if(runsAfter>G.awayScore && runsBefore<=G.awayScore && G.inning>=9){
+    G.walkoffTriggered=true;
+    triggerWalkoff();
+  }
+}
+
+function triggerWalkoff(){
+  const batter=currentLineup()[(G.isTop?G.awayBatterIdx:G.homeBatterIdx)];
+  const bn=batter?lastName(batter.name):'the hero';
+  const walkoffLines=[
+    [`WALK. OFF.`,`${bn} delivers and the crowd ERUPTS. Game over. Series shifts!`],
+    [`THEY WIN IT!`,`${bn} comes through in the clutch. The home team rushes the field!`],
+    [`WALKOFF!!`,`Nobody is going home disappointed tonight. ${bn} ends it right here!`],
+    [`IT'S OVER!`,`${bn} drives it home and the place goes absolutely CRAZY. Walk off!`],
+    [`PANDEMONIUM!`,`${bn} is mobbed at the plate. What a finish. Walk off victory!`],
+  ];
+  const[headline,desc]=pick(walkoffLines);
+  document.getElementById('walkoff-headline').textContent=headline;
+  document.getElementById('walkoff-desc').textContent=desc;
+  document.getElementById('walkoff-score').textContent=`${G.awayAbbr} ${G.awayScore} · ${G.homeScore} ${G.homeAbbr} — FINAL`;
+  document.getElementById('walkoff-overlay').style.display='flex';
+}
+
+function dismissWalkoff(){
+  document.getElementById('walkoff-overlay').style.display='none';
+  recordSeriesResult();
+  openEndGame();
+}
+
+// ══════════════════════════════════════
+// SEASON STATS PULL
+// ══════════════════════════════════════
+function setSeasonLoadStatus(msg){
+  const el=document.getElementById('season-load-status');
+  if(!el) return;
+  el.textContent=msg;
+  el.style.display=msg?'block':'none';
+}
+
+async function pullSeasonStats(scriptUrl){
+  try{
+    const url=scriptUrl+'?action=getSeasonStats';
+    const res=await fetch(url,{method:'GET'});
+    if(!res.ok){setSeasonLoadStatus('⚠ Season stats unavailable');return;}
+    const json=await res.json();
+    if(!json.ok){setSeasonLoadStatus('⚠ '+(json.error||'Stats error'));return;}
+    G.seasonStats=json.hitters||{};
+    G.pitcherSeasonStats=json.pitchers||{};
+    applySeasonStats();
+    const hn=Object.keys(G.seasonStats).length;
+    const pn=Object.keys(G.pitcherSeasonStats).length;
+    setSeasonLoadStatus(`✓ Season stats loaded (${hn} hitters, ${pn} pitchers)`);
+    setTimeout(()=>setSeasonLoadStatus(''),3500);
+    renderAll();
+  }catch(err){
+    setSeasonLoadStatus('⚠ Season stats unavailable');
+    console.error('Season stats error:',err);
+  }
+}
+
+function applySeasonStats(){
+  // Hitters
+  [G.awayLineup,G.homeLineup].forEach(lineup=>{
+    lineup.forEach(p=>{
+      const s=G.seasonStats[p.name];
+      if(!s) return;
+      p.avg=s.avg||'—'; p.obp=s.obp||'—'; p.ops=s.ops||'—';
+      p.hr=s.hr!=null?String(s.hr):'—';
+      p.rbi=s.rbi!=null?String(s.rbi):'—';
+      p.r=s.r!=null?String(s.r):'—';
+      p.sb=s.sb!=null?String(s.sb):'—';
+    });
+  });
+  // Pitchers — apply to pitcherStats so bugs show real season ERA/WHIP/W-L
+  if(G.pitcherSeasonStats){
+    Object.entries(G.pitcherSeasonStats).forEach(([name,s])=>{
+      if(!G.pitcherStats[name]) G.pitcherStats[name]={gameOuts:0,gameK:0,gameH:0,gameBB:0,gameHR:0,gameER:0};
+      G.pitcherStats[name].era=s.era||'—';
+      G.pitcherStats[name].whip=s.whip||'—';
+      G.pitcherStats[name].wl=(s.w||0)+'-'+(s.l||0);
+      G.pitcherStats[name].hrS=String(s.hr||'—');
+    });
+  }
+}
+
+// ══════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════
+let toastTimer;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.display='block';
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.style.display='none',2400);
+}
+const PITCHING={
+  ANA:{1:['Chuck Finley', 'Chuck Finley', 'Chuck Finley', 'Chuck Finley', 'Chuck Finley', 'Chuck Finley', 'Chuck Finley', 'Mark Petkovsek', 'Troy Percival', 'Troy Percival'],2:['Steve Sparks', 'Steve Sparks', 'Steve Sparks', 'Steve Sparks', 'Steve Sparks', 'Steve Sparks', 'Steve Sparks', 'Mark Petkovsek', 'Troy Percival', 'Troy Percival'],3:['Tim Belcher', 'Tim Belcher', 'Tim Belcher', 'Tim Belcher', 'Tim Belcher', 'Tim Belcher', 'Mark Petkovsek', 'Mark Petkovsek', 'Troy Percival', 'Troy Percival']},
+  ARI:{1:['Randy Johnson', 'Randy Johnson', 'Randy Johnson', 'Randy Johnson', 'Randy Johnson', 'Randy Johnson', 'Randy Johnson', 'Randy Johnson', 'Matt Mantei', 'Greg Swindell'],2:['Omar Daal', 'Omar Daal', 'Omar Daal', 'Omar Daal', 'Omar Daal', 'Omar Daal', 'Omar Daal', 'Greg Swindell', 'Matt Mantei', 'Dan Plesac'],3:['Andy Benes', 'Andy Benes', 'Andy Benes', 'Andy Benes', 'Andy Benes', 'Andy Benes', 'Dan Plesac', 'Greg Swindell', 'Matt Mantei', 'Matt Mantei']},
+  ATL:{1:['Greg Maddux', 'Greg Maddux', 'Greg Maddux', 'Greg Maddux', 'Greg Maddux', 'Greg Maddux', 'Greg Maddux', 'Mike Remlinger', 'John Rocker', 'Tom Glavine'],2:['John Smoltz', 'John Smoltz', 'John Smoltz', 'John Smoltz', 'John Smoltz', 'John Smoltz', 'Mike Remlinger', 'Mike Remlinger', 'John Rocker', 'Tom Glavine'],3:['Kevin Millwood', 'Kevin Millwood', 'Kevin Millwood', 'Kevin Millwood', 'Kevin Millwood', 'Kevin Millwood', 'Kevin Millwood', 'Mike Remlinger', 'John Rocker', 'Tom Glavine']},
+  BAL:{1:['Mike Mussina', 'Mike Mussina', 'Mike Mussina', 'Mike Mussina', 'Mike Mussina', 'Mike Mussina', 'Mike Mussina', 'Jesse Orosco', 'Mike Timlin', 'Mike Timlin'],2:['Scott Erickson', 'Scott Erickson', 'Scott Erickson', 'Scott Erickson', 'Scott Erickson', 'Scott Erickson', 'Scott Erickson', 'Jesse Orosco', 'Mike Timlin', 'Mike Timlin'],3:['Sidney Ponson', 'Sidney Ponson', 'Sidney Ponson', 'Sidney Ponson', 'Sidney Ponson', 'Sidney Ponson', 'Sidney Ponson', 'Jesse Orosco', 'Mike Timlin', 'Mike Timlin']},
+  BOS:{1:['Pedro Martinez', 'Pedro Martinez', 'Pedro Martinez', 'Pedro Martinez', 'Pedro Martinez', 'Pedro Martinez', 'Pedro Martinez', 'Rheal Cormier', 'Derek Lowe', 'Tim Wakefield'],2:['Pat Rapp', 'Pat Rapp', 'Pat Rapp', 'Pat Rapp', 'Pat Rapp', 'Tim Wakefield', 'Rheal Cormier', 'Rheal Cormier', 'Derek Lowe', 'Derek Lowe'],3:['Mark Portugal', 'Mark Portugal', 'Mark Portugal', 'Mark Portugal', 'Mark Portugal', 'Tim Wakefield', 'Tim Wakefield', 'Rheal Cormier', 'Derek Lowe', 'Derek Lowe']},
+  CHC:{1:['Jon Lieber', 'Jon Lieber', 'Jon Lieber', 'Jon Lieber', 'Jon Lieber', 'Jon Lieber', 'Jon Lieber', 'Scott Sanders', 'Rick Aguilera', 'Rick Aguilera'],2:['Kyle Farnsworth', 'Kyle Farnsworth', 'Kyle Farnsworth', 'Kyle Farnsworth', 'Kyle Farnsworth', 'Kyle Farnsworth', 'Kyle Farnsworth', 'Scott Sanders', 'Rick Aguilera', 'Rick Aguilera'],3:['Steve Trachsel', 'Steve Trachsel', 'Steve Trachsel', 'Steve Trachsel', 'Steve Trachsel', 'Steve Trachsel', 'Steve Trachsel', 'Scott Sanders', 'Rick Aguilera', 'Rick Aguilera']},
+  CIN:{1:['Pete Harnisch', 'Pete Harnisch', 'Pete Harnisch', 'Pete Harnisch', 'Pete Harnisch', 'Pete Harnisch', 'Scott Sullivan', 'Scott Sullivan', 'Scott Williamson', 'Danny Graves'],2:['Brett Tomko', 'Brett Tomko', 'Brett Tomko', 'Brett Tomko', 'Brett Tomko', 'Brett Tomko', 'Danny Graves', 'Scott Sullivan', 'Scott Williamson', 'Scott Williamson'],3:['Ron Villone', 'Ron Villone', 'Ron Villone', 'Ron Villone', 'Ron Villone', 'Ron Villone', 'Danny Graves', 'Scott Sullivan', 'Scott Williamson', 'Scott Williamson']},
+  CLE:{1:['Bartolo Colon', 'Bartolo Colon', 'Bartolo Colon', 'Bartolo Colon', 'Bartolo Colon', 'Bartolo Colon', 'Bartolo Colon', 'Paul Shuey', 'Mike Jackson', 'Mike Jackson'],2:['Dave Burba', 'Dave Burba', 'Dave Burba', 'Dave Burba', 'Dave Burba', 'Dave Burba', 'Dave Burba', 'Paul Shuey', 'Mike Jackson', 'Mike Jackson'],3:['Charles Nagy', 'Charles Nagy', 'Charles Nagy', 'Charles Nagy', 'Charles Nagy', 'Charles Nagy', 'Paul Shuey', 'Paul Shuey', 'Mike Jackson', 'Mike Jackson']},
+  COL:{1:['Pedro Astacio', 'Pedro Astacio', 'Pedro Astacio', 'Pedro Astacio', 'Pedro Astacio', 'Pedro Astacio', 'Pedro Astacio', 'Jerry DiPoto', 'Dave Veres', 'Curtis Leskanic'],2:['Darryl Kile', 'Darryl Kile', 'Darryl Kile', 'Darryl Kile', 'Darryl Kile', 'Darryl Kile', 'Curtis Leskanic', 'Jerry DiPoto', 'Dave Veres', 'Dave Veres'],3:['Brian Bohanon', 'Brian Bohanon', 'Brian Bohanon', 'Brian Bohanon', 'Brian Bohanon', 'Brian Bohanon', 'Curtis Leskanic', 'Jerry DiPoto', 'Dave Veres', 'Dave Veres']},
+  CWS:{1:['Mike Sirotka', 'Mike Sirotka', 'Mike Sirotka', 'Mike Sirotka', 'Mike Sirotka', 'Mike Sirotka', 'Mike Sirotka', 'Bill Simas', 'Bob Howry', 'Bob Howry'],2:['James Baldwin', 'James Baldwin', 'James Baldwin', 'James Baldwin', 'James Baldwin', 'James Baldwin', 'James Baldwin', 'Bill Simas', 'Bob Howry', 'Bob Howry'],3:['Jim Parque', 'Jim Parque', 'Jim Parque', 'Jim Parque', 'Jim Parque', 'Jim Parque', 'Bill Simas', 'Bill Simas', 'Bob Howry', 'Bob Howry']},
+  DET:{1:['Dave Mlicki', 'Dave Mlicki', 'Dave Mlicki', 'Dave Mlicki', 'Dave Mlicki', 'Dave Mlicki', 'Dave Mlicki', 'CJ Nitkowski', 'Todd Jones', 'Todd Jones'],2:['Jeff Weaver', 'Jeff Weaver', 'Jeff Weaver', 'Jeff Weaver', 'Jeff Weaver', 'Jeff Weaver', 'Jeff Weaver', 'CJ Nitkowski', 'Todd Jones', 'Todd Jones'],3:['Brian Moehler', 'Brian Moehler', 'Brian Moehler', 'Brian Moehler', 'Brian Moehler', 'Brian Moehler', 'CJ Nitkowski', 'CJ Nitkowski', 'Todd Jones', 'Todd Jones']},
+  FLA:{1:['Ryan Dempster', 'Ryan Dempster', 'Ryan Dempster', 'Ryan Dempster', 'Ryan Dempster', 'Ryan Dempster', 'Brian Edmondson', 'Braden Looper', 'Antonio Alfonseca', 'Antonio Alfonseca'],2:['Dennis Springer', 'Dennis Springer', 'Dennis Springer', 'Dennis Springer', 'Dennis Springer', 'Dennis Springer', 'Dennis Springer', 'Braden Looper', 'Antonio Alfonseca', 'Brian Edmondson'],3:['Brian Meadows', 'Brian Meadows', 'Brian Meadows', 'Brian Meadows', 'Brian Meadows', 'Brian Meadows', 'Brian Edmondson', 'Braden Looper', 'Antonio Alfonseca', 'Antonio Alfonseca']},
+  HOU:{1:['Mike Hampton', 'Mike Hampton', 'Mike Hampton', 'Mike Hampton', 'Mike Hampton', 'Mike Hampton', 'Mike Hampton', 'Jay Powell', 'Billy Wagner', 'Scott Elarton'],2:['Shane Reynolds', 'Shane Reynolds', 'Shane Reynolds', 'Shane Reynolds', 'Shane Reynolds', 'Shane Reynolds', 'Shane Reynolds', 'Jay Powell', 'Billy Wagner', 'Scott Elarton'],3:['Jose Lima', 'Jose Lima', 'Jose Lima', 'Jose Lima', 'Jose Lima', 'Jose Lima', 'Jose Lima', 'Jay Powell', 'Billy Wagner', 'Scott Elarton']},
+  KC:{1:['Jeff Suppan', 'Jeff Suppan', 'Jeff Suppan', 'Jeff Suppan', 'Jeff Suppan', 'Jeff Suppan', 'Jeff Suppan', 'Scott Service', 'Jeff Montgomery', 'Jeff Montgomery'],2:['Jose Rosado', 'Jose Rosado', 'Jose Rosado', 'Jose Rosado', 'Jose Rosado', 'Jose Rosado', 'Jose Rosado', 'Scott Service', 'Jeff Montgomery', 'Jeff Montgomery'],3:['Jay Witasick', 'Jay Witasick', 'Jay Witasick', 'Jay Witasick', 'Jay Witasick', 'Jay Witasick', 'Jay Witasick', 'Scott Service', 'Jeff Montgomery', 'Jeff Montgomery']},
+  LAD:{1:['Kevin Brown', 'Kevin Brown', 'Kevin Brown', 'Kevin Brown', 'Kevin Brown', 'Kevin Brown', 'Kevin Brown', 'Pedro Borbon', 'Jeff Shaw', 'Jeff Shaw'],2:['Chan Ho Park', 'Chan Ho Park', 'Chan Ho Park', 'Chan Ho Park', 'Chan Ho Park', 'Chan Ho Park', 'Chan Ho Park', 'Pedro Borbon', 'Jeff Shaw', 'Jeff Shaw'],3:['Ismael Valdes', 'Ismael Valdes', 'Ismael Valdes', 'Ismael Valdes', 'Ismael Valdes', 'Ismael Valdes', 'Pedro Borbon', 'Pedro Borbon', 'Jeff Shaw', 'Jeff Shaw']},
+  MIL:{1:['Hideo Nomo', 'Hideo Nomo', 'Hideo Nomo', 'Hideo Nomo', 'Hideo Nomo', 'Hideo Nomo', 'Hideo Nomo', 'Mike Myers', 'Bob Wickman', 'Bob Wickman'],2:['Steve Woodard', 'Steve Woodard', 'Steve Woodard', 'Steve Woodard', 'Steve Woodard', 'Steve Woodard', 'Steve Woodard', 'Mike Myers', 'Bob Wickman', 'Bob Wickman'],3:['Scott Karl', 'Scott Karl', 'Scott Karl', 'Scott Karl', 'Scott Karl', 'Scott Karl', 'Scott Karl', 'Mike Myers', 'Bob Wickman', 'Bob Wickman']},
+  MIN:{1:['Eric Milton', 'Eric Milton', 'Eric Milton', 'Eric Milton', 'Eric Milton', 'Eric Milton', 'Bob Wells', 'Bob Wells', 'Mike Trombley', 'Mike Trombley'],2:['Brad Radke', 'Brad Radke', 'Brad Radke', 'Brad Radke', 'Brad Radke', 'Brad Radke', 'Brad Radke', 'Bob Wells', 'Mike Trombley', 'Mike Trombley'],3:['Joe Mays', 'Joe Mays', 'Joe Mays', 'Joe Mays', 'Joe Mays', 'Joe Mays', 'Joe Mays', 'Bob Wells', 'Mike Trombley', 'Mike Trombley']},
+  MON:{1:['Mike Thurman', 'Mike Thurman', 'Mike Thurman', 'Mike Thurman', 'Mike Thurman', 'Mike Thurman', 'Steve Kline', 'Steve Kline', 'Ugueth Urbina', 'Ugueth Urbina'],2:['Javier Vazquez', 'Javier Vazquez', 'Javier Vazquez', 'Javier Vazquez', 'Javier Vazquez', 'Javier Vazquez', 'Javier Vazquez', 'Steve Kline', 'Ugueth Urbina', 'Ugueth Urbina'],3:['Dustin Hermanson', 'Dustin Hermanson', 'Dustin Hermanson', 'Dustin Hermanson', 'Dustin Hermanson', 'Dustin Hermanson', 'Dustin Hermanson', 'Steve Kline', 'Ugueth Urbina', 'Ugueth Urbina']},
+  NYM:{1:['Orel Hershiser', 'Orel Hershiser', 'Orel Hershiser', 'Orel Hershiser', 'Orel Hershiser', 'Orel Hershiser', 'Dennis Cook', 'Turk Wendell', 'Armando Benitez', 'Armando Benitez'],2:['Al Leiter', 'Al Leiter', 'Al Leiter', 'Al Leiter', 'Al Leiter', 'Al Leiter', 'Dennis Cook', 'Turk Wendell', 'Armando Benitez', 'Armando Benitez'],3:['Masato Yoshii', 'Masato Yoshii', 'Masato Yoshii', 'Masato Yoshii', 'Masato Yoshii', 'Masato Yoshii', 'Dennis Cook', 'Turk Wendell', 'Armando Benitez', 'Armando Benitez']},
+  NYY:{1:['David Cone', 'David Cone', 'David Cone', 'David Cone', 'David Cone', 'David Cone', 'Ramiro Mendoza', 'Ramiro Mendoza', 'Mariano Rivera', 'Andy Pettitte'],2:['Orlando Hernandez', 'Orlando Hernandez', 'Orlando Hernandez', 'Orlando Hernandez', 'Orlando Hernandez', 'Orlando Hernandez', 'Ramiro Mendoza', 'Ramiro Mendoza', 'Mariano Rivera', 'Andy Pettitte'],3:['Roger Clemens', 'Roger Clemens', 'Roger Clemens', 'Roger Clemens', 'Roger Clemens', 'Roger Clemens', 'Andy Pettitte', 'Andy Pettitte', 'Mariano Rivera', 'Ramiro Mendoza']},
+  OAK:{1:['Gil Heredia', 'Gil Heredia', 'Gil Heredia', 'Gil Heredia', 'Gil Heredia', 'Gil Heredia', 'Gil Heredia', 'Buddy Groom', 'Doug Jones', 'Doug Jones'],2:['Omar Olivares', 'Omar Olivares', 'Omar Olivares', 'Omar Olivares', 'Omar Olivares', 'Omar Olivares', 'Omar Olivares', 'Buddy Groom', 'Doug Jones', 'Doug Jones'],3:['Kevin Appier', 'Kevin Appier', 'Kevin Appier', 'Kevin Appier', 'Kevin Appier', 'Kevin Appier', 'Buddy Groom', 'Buddy Groom', 'Doug Jones', 'Doug Jones']},
+  PHI:{1:['Curt Schilling', 'Curt Schilling', 'Curt Schilling', 'Curt Schilling', 'Curt Schilling', 'Curt Schilling', 'Curt Schilling', 'Curt Schilling', 'Wayne Gomes', 'Steve Montgomery'],2:['Paul Byrd', 'Paul Byrd', 'Paul Byrd', 'Paul Byrd', 'Paul Byrd', 'Paul Byrd', 'Steve Montgomery', 'Steve Montgomery', 'Wayne Gomes', 'Wayne Gomes'],3:['Chad Ogea', 'Chad Ogea', 'Chad Ogea', 'Chad Ogea', 'Chad Ogea', 'Chad Ogea', 'Steve Montgomery', 'Steve Montgomery', 'Wayne Gomes', 'Wayne Gomes']},
+  PIT:{1:['Todd Ritchie', 'Todd Ritchie', 'Todd Ritchie', 'Todd Ritchie', 'Todd Ritchie', 'Todd Ritchie', 'Todd Ritchie', 'Brad Clontz', 'Mike Williams', 'Scott Sauerbeck'],2:['Kris Benson', 'Kris Benson', 'Kris Benson', 'Kris Benson', 'Kris Benson', 'Kris Benson', 'Scott Sauerbeck', 'Brad Clontz', 'Mike Williams', 'Mike Williams'],3:['Jason Schmidt', 'Jason Schmidt', 'Jason Schmidt', 'Jason Schmidt', 'Jason Schmidt', 'Jason Schmidt', 'Scott Sauerbeck', 'Brad Clontz', 'Mike Williams', 'Mike Williams']},
+  SD:{1:['Andy Ashby', 'Andy Ashby', 'Andy Ashby', 'Andy Ashby', 'Andy Ashby', 'Andy Ashby', 'Andy Ashby', 'Matt Whisenant', 'Trevor Hoffman', 'Trevor Hoffman'],2:['Sterling Hitchcock', 'Sterling Hitchcock', 'Sterling Hitchcock', 'Sterling Hitchcock', 'Sterling Hitchcock', 'Sterling Hitchcock', 'Sterling Hitchcock', 'Matt Whisenant', 'Trevor Hoffman', 'Trevor Hoffman'],3:['Woody Williams', 'Woody Williams', 'Woody Williams', 'Woody Williams', 'Woody Williams', 'Woody Williams', 'Matt Whisenhunt', 'Matt Whisenhunt', 'Trevor Hoffman', 'Trevor Hoffman']},
+  SEA:{1:['John Halama', 'John Halama', 'John Halama', 'John Halama', 'John Halama', 'John Halama', 'John Halama', 'Joe Paniagua', 'Jose Mesa', 'Jose Mesa'],2:['Jamie Moyer', 'Jamie Moyer', 'Jamie Moyer', 'Jamie Moyer', 'Jamie Moyer', 'Jamie Moyer', 'Jamie Moyer', 'Joe Paniagua', 'Jose Mesa', 'Jose Mesa'],3:['Freddy Garcia', 'Freddy Garcia', 'Freddy Garcia', 'Freddy Garcia', 'Freddy Garcia', 'Freddy Garcia', 'Joe Paniagua', 'Joe Paniagua', 'Jose Mesa', 'Jose Mesa']},
+  SF:{1:['Kirk Reuter', 'Kirk Reuter', 'Kirk Reuter', 'Kirk Reuter', 'Kirk Reuter', 'Kirk Reuter', 'Alan Embree', 'John Johnstone', 'Robb Nen', 'Robb Nen'],2:['Russ Ortiz', 'Russ Ortiz', 'Russ Ortiz', 'Russ Ortiz', 'Russ Ortiz', 'Alan Embree', 'Alan Embree', 'John Johnstone', 'Robb Nen', 'Robb Nen'],3:['Shawn Estes', 'Shawn Estes', 'Shawn Estes', 'Shawn Estes', 'Shawn Estes', 'Alan Embree', 'John Johnstone', 'John Johnstone', 'Robb Nen', 'Robb Nen']},
+  STL:{1:['Darren Oliver', 'Darren Oliver', 'Darren Oliver', 'Darren Oliver', 'Darren Oliver', 'Darren Oliver', 'Darren Oliver', 'Lance Painter', 'Ricky Bottalico', 'Manny Aybar'],2:['Jose Jimenez', 'Jose Jimenez', 'Jose Jimenez', 'Jose Jimenez', 'Jose Jimenez', 'Jose Jimenez', 'Manny Aybar', 'Lance Painter', 'Ricky Bottalico', 'Ricky Bottalico'],3:['Kent Bottenfield', 'Kent Bottenfield', 'Kent Bottenfield', 'Kent Bottenfield', 'Kent Bottenfield', 'Kent Bottenfield', 'Manny Aybar', 'Lance Painter', 'Ricky Bottalico', 'Ricky Bottalico']},
+  TB:{1:['Wilson Alvarez', 'Wilson Alvarez', 'Wilson Alvarez', 'Wilson Alvarez', 'Wilson Alvarez', 'Wilson Alvarez', 'Wilson Alvarez', 'Rick White', 'Roberto Hernandez', 'Roberto Hernandez'],2:['Bobby Witt', 'Bobby Witt', 'Bobby Witt', 'Bobby Witt', 'Bobby Witt', 'Bobby Witt', 'Bobby Witt', 'Rick White', 'Roberto Hernandez', 'Roberto Hernandez'],3:['Rolando Arrojo', 'Rolando Arrojo', 'Rolando Arrojo', 'Rolando Arrojo', 'Rolando Arrojo', 'Rolando Arrojo', 'Rick White', 'Rick White', 'Roberto Hernandez', 'Roberto Hernandez']},
+  TEX:{1:['Aaron Sele', 'Aaron Sele', 'Aaron Sele', 'Aaron Sele', 'Aaron Sele', 'Aaron Sele', 'Tim Crabtree', 'Jeff Zimmerman', 'John Wetteland', 'John Wetteland'],2:['Rick Helling', 'Rick Helling', 'Rick Helling', 'Rick Helling', 'Rick Helling', 'Tim Crabtree', 'Jeff Zimmerman', 'Jeff Zimmerman', 'John Wetteland', 'John Wetteland'],3:['Mike Morgan', 'Mike Morgan', 'Mike Morgan', 'Mike Morgan', 'Mike Morgan', 'Tim Crabtree', 'Tim Crabtree', 'Jeff Zimmerman', 'John Wetteland', 'John Wetteland']},
+  TOR:{1:['David Wells', 'David Wells', 'David Wells', 'David Wells', 'David Wells', 'David Wells', 'David Wells', 'Graeme Lloyd', 'Billy Koch', 'Billy Koch'],2:['Pat Hentgen', 'Pat Hentgen', 'Pat Hentgen', 'Pat Hentgen', 'Pat Hentgen', 'Pat Hentgen', 'Pat Hentgen', 'Graeme Lloyd', 'Billy Koch', 'Billy Koch'],3:['Kelvim Escobar', 'Kelvim Escobar', 'Kelvim Escobar', 'Kelvim Escobar', 'Kelvim Escobar', 'Kelvim Escobar', 'Graeme Lloyd', 'Graeme Lloyd', 'Billy Koch', 'Billy Koch']},
+};
+
+const OVER_LIMIT={
+  ANA:{1:[false, false, false, false, false, false, true, false, false, true],2:[false, false, false, false, false, false, true, false, false, true],3:[false, false, false, false, false, false, false, true, false, true]},
+  ARI:{1:[false, false, false, false, false, false, false, false, false, false],2:[false, false, false, false, false, false, false, false, false, false],3:[false, false, false, false, false, false, false, false, false, true]},
+  ATL:{1:[false, false, false, false, false, false, false, false, false, false],2:[false, false, false, false, false, false, false, false, false, false],3:[false, false, false, false, false, false, false, false, false, false]},
+  BAL:{1:[false, false, false, false, false, false, false, false, false, true],2:[false, false, false, false, false, false, false, false, false, true],3:[false, false, false, false, false, false, false, false, false, true]},
+  BOS:{1:[false, false, false, false, false, false, false, false, false, false],2:[false, false, false, false, false, false, false, true, false, true],3:[false, false, false, false, false, false, false, false, false, true]},
+  CHC:{1:[false, false, false, false, false, false, true, false, false, true],2:[false, false, false, false, false, false, true, false, false, true],3:[false, false, false, false, false, false, true, false, false, true]},
+  CIN:{1:[false, false, false, false, false, false, false, true, false, false],2:[false, false, false, false, false, false, false, false, false, true],3:[false, false, false, false, false, false, false, false, false, true]},
+  CLE:{1:[false, false, false, false, false, false, true, false, false, true],2:[false, false, false, false, false, false, false, false, false, true],3:[false, false, false, false, false, false, false, true, false, true]},
+  COL:{1:[false, false, false, false, false, false, false, false, false, false],2:[false, false, false, false, false, false, false, false, false, true],3:[false, false, false, false, false, false, false, false, false, true]},
+  CWS:{1:[false, false, false, false, false, false, false, false, false, true],2:[false, false, false, false, false, false, true, false, false, true],3:[false, false, false, false, false, false, false, true, false, true]},
+  DET:{1:[false, false, false, false, false, false, true, false, false, true],2:[false, false, false, false, false, false, true, false, false, true],3:[false, false, false, false, false, false, false, true, false, true]},
+  FLA:{1:[false, false, false, false, false, false, false, false, false, true],2:[false, false, false, false, false, false, false, false, false, false],3:[false, false, false, false, false, false, false, false, false, true]},
+  HOU:{1:[false, false, false, false, false, false, false, false, false, false],2:[false, false, false, false, false, false, false, false, false, false],3:[false, false, false, false, false, false, false, false, false, false]},
+  KC:{1:[false, false, false, false, false, false, true, false, false, true],2:[false, false, false, false, false, false, true, false, false, true],3:[false, false, false, false, false, false, true, false, false, true]},
+  LAD:{1:[false, false, false, false, false, false, false, false, false, true],2:[false, false, false, false, false, false, true, false, false, true],3:[false, false, false, false, false, false, false, true, false, true]},
+  MIL:{1:[false, false, false, false, false, false, true, false, false, true],2:[false, false, false, false, false, false, true, false, false, true],3:[false, false, false, false, false, false, true, false, false, true]},
+  MIN:{1:[false, false, false, false, false, false, false, true, false, true],2:[false, false, false, false, false, false, false, false, false, true],3:[false, false, false, false, false, false, false, false, false, true]},
+  MON:{1:[false, false, false, false, false, true, false, true, false, true],2:[false, false, false, false, false, false, true, false, false, true],3:[false, false, false, false, false, false, true, false, false, true]},
+  NYM:{1:[false, false, false, false, false, false, false, false, false, true],2:[false, false, false, false, false, false, false, false, false, true],3:[false, false, false, false, false, false, false, false, false, true]},
+  NYY:{1:[false, false, false, false, false, false, false, false, false, false],2:[false, false, false, false, false, false, false, false, false, false],3:[false, false, false, false, false, false, false, false, false, false]},
+  OAK:{1:[false, false, false, false, false, false, true, false, false, true],2:[false, false, false, false, false, false, true, false, false, true],3:[false, false, false, false, false, false, false, true, false, true]},
+  PHI:{1:[false, false, false, false, false, false, false, false, false, false],2:[false, false, false, false, false, false, false, true, false, true],3:[false, false, false, false, false, false, false, true, false, true]},
+  PIT:{1:[false, false, false, false, false, false, false, false, false, false],2:[false, false, false, false, false, false, false, false, false, true],3:[false, false, false, false, false, false, false, false, false, true]},
+  SD:{1:[false, false, false, false, false, false, false, false, false, true],2:[false, false, false, false, false, false, true, false, false, true],3:[false, false, false, false, false, false, false, true, false, true]},
+  SEA:{1:[false, false, false, false, false, false, false, false, false, true],2:[false, false, false, false, false, false, false, false, false, true],3:[false, false, false, false, false, false, false, true, false, true]},
+  SF:{1:[false, false, false, false, false, false, false, false, false, true],2:[false, false, false, false, false, false, true, false, false, true],3:[false, false, false, false, false, false, false, true, false, true]},
+  STL:{1:[false, false, false, false, false, false, false, false, false, false],2:[false, false, false, false, false, false, false, false, false, true],3:[false, false, false, false, false, false, false, false, false, true]},
+  TB:{1:[false, false, false, false, false, false, true, false, false, true],2:[false, false, false, false, false, false, true, false, false, true],3:[false, false, false, false, false, false, false, false, false, true]},
+  TEX:{1:[false, false, false, false, false, false, false, false, false, true],2:[false, false, false, false, false, false, false, true, false, true],3:[false, false, false, false, false, false, true, false, false, true]},
+  TOR:{1:[false, false, false, false, false, false, false, false, false, true],2:[false, false, false, false, false, false, true, false, false, true],3:[false, false, false, false, false, false, false, false, false, true]},
+};
+const RAW_LINEUPS = {
+  "Angels":    [{n:'Orlando Palmeiro',slot:1,pos:'DH',spd:'B',fld:0},{n:'Tim Salmon',slot:2,pos:'LF',spd:'B',fld:1},{n:'Troy Glaus',slot:3,pos:'3B',spd:'B',fld:1},{n:'Mo Vaughn',slot:4,pos:'1B',spd:'C',fld:0},{n:'Garret Anderson',slot:5,pos:'CF',spd:'B',fld:3},{n:'Todd Greene',slot:6,pos:'RF',spd:'B',fld:1},{n:'Matt Walbeck',slot:7,pos:'C',spd:'B',fld:7},{n:'Gary DiSarcina',slot:8,pos:'SS',spd:'B',fld:4},{n:'Jeff Huson',slot:9,pos:'2B',spd:'A',fld:4}],
+  "Diamondbacks":    [{n:'Hanley Frias',slot:1,pos:'SS',spd:'B',fld:1},{n:'Jay Bell',slot:2,pos:'2B',spd:'B',fld:2},{n:'Luis Gonzalez',slot:3,pos:'LF',spd:'B',fld:2},{n:'Matt Williams',slot:4,pos:'3B',spd:'B',fld:3},{n:'Steve Finley',slot:5,pos:'CF',spd:'B',fld:2},{n:'Bernard Gilkey',slot:6,pos:'DH',spd:'B',fld:0},{n:'Kelly Stinnett',slot:7,pos:'C',spd:'B',fld:6},{n:'Travis Lee',slot:8,pos:'1B',spd:'A',fld:0},{n:'Tony Womack',slot:9,pos:'RF',spd:'A',fld:2}],
+  "Braves":    [{n:'Andruw Jones',slot:1,pos:'CF',spd:'A',fld:3},{n:'Gerald Williams',slot:2,pos:'RF',spd:'A',fld:1},{n:'Chipper Jones',slot:3,pos:'3B',spd:'A',fld:2},{n:'Ryan Klesko',slot:4,pos:'DH',spd:'B',fld:0},{n:'Brian Jordan',slot:5,pos:'LF',spd:'B',fld:1},{n:'Brian Hunter',slot:6,pos:'1B',spd:'C',fld:1},{n:'Jose Hernandez',slot:7,pos:'SS',spd:'B',fld:3},{n:'Eddie Perez',slot:8,pos:'C',spd:'C',fld:6},{n:'Bret Boone',slot:9,pos:'2B',spd:'B',fld:2}],
+  "Orioles":    [{n:'Brady Anderson',slot:1,pos:'CF',spd:'A',fld:1},{n:'Delino Deshields',slot:2,pos:'2B',spd:'A',fld:3},{n:'Albert Belle',slot:3,pos:'DH',spd:'B',fld:0},{n:'Cal Ripken Jr.',slot:4,pos:'3B',spd:'C',fld:2},{n:'B.J. Surhoff',slot:5,pos:'LF',spd:'B',fld:2},{n:'Charles Johnson',slot:6,pos:'C',spd:'C',fld:8},{n:'Jeff Conine',slot:7,pos:'1B',spd:'C',fld:1},{n:'Mike Bordick',slot:8,pos:'SS',spd:'B',fld:5},{n:'Rich Amaral',slot:9,pos:'RF',spd:'A',fld:1}],
+  "Red Sox":    [{n:'Jose Offerman',slot:1,pos:'2B',spd:'B',fld:2},{n:'Trot Nixon',slot:2,pos:'RF',spd:'B',fld:1},{n:'Nomar Garciaparra',slot:3,pos:'SS',spd:'B',fld:1},{n:'Mike Stanley',slot:4,pos:'1B',spd:'C',fld:0},{n:"Troy O'Leary",slot:5,pos:'DH',spd:'C',fld:0},{n:'Butch Huskey',slot:6,pos:'LF',spd:'B',fld:2},{n:'Jason Varitek',slot:7,pos:'C',spd:'C',fld:5},{n:'John Valentin',slot:8,pos:'3B',spd:'C',fld:2},{n:'Damon Buford',slot:9,pos:'CF',spd:'A',fld:1}],
+  "Cubs":    [{n:'Mark Grace',slot:1,pos:'1B',spd:'B',fld:0},{n:'Jeff Blauser',slot:2,pos:'SS',spd:'B',fld:2},{n:'Sammy Sosa',slot:3,pos:'RF',spd:'B',fld:1},{n:'Henry Rodriguez',slot:4,pos:'LF',spd:'B',fld:1},{n:'Jeff Reed',slot:5,pos:'DH',spd:'C',fld:0},{n:'Gary Gaetti',slot:6,pos:'3B',spd:'C',fld:3},{n:'Lance Johnson',slot:7,pos:'CF',spd:'A',fld:2},{n:'Mickey Morandini',slot:8,pos:'2B',spd:'B',fld:3},{n:'Benito Santiago',slot:9,pos:'C',spd:'B',fld:7}],
+  "Reds":    [{n:'Barry Larkin',slot:1,pos:'SS',spd:'A',fld:5},{n:'Mike Cameron',slot:2,pos:'CF',spd:'A',fld:2},{n:'Greg Vaughn',slot:3,pos:'LF',spd:'A',fld:2},{n:'Sean Casey',slot:4,pos:'1B',spd:'C',fld:0},{n:'Eddie Taubensee',slot:5,pos:'C',spd:'C',fld:2},{n:'Dmitri Young',slot:6,pos:'DH',spd:'B',fld:0},{n:'Michael Tucker',slot:7,pos:'RF',spd:'A',fld:1},{n:'Aaron Boone',slot:8,pos:'3B',spd:'A',fld:2},{n:'Pokey Reese',slot:9,pos:'2B',spd:'A',fld:5}],
+  "Indians":    [{n:'Kenny Lofton',slot:1,pos:'CF',spd:'A',fld:2},{n:'Roberto Alomar',slot:2,pos:'2B',spd:'A',fld:3},{n:'Manny Ramirez',slot:3,pos:'RF',spd:'C',fld:1},{n:'Jim Thome',slot:4,pos:'1B',spd:'C',fld:0},{n:'David Justice',slot:5,pos:'LF',spd:'C',fld:2},{n:'Harold Baines',slot:6,pos:'DH',spd:'C',fld:0},{n:'Einar Diaz',slot:7,pos:'C',spd:'B',fld:7},{n:'Travis Fryman',slot:8,pos:'3B',spd:'B',fld:2},{n:'Omar Vizquel',slot:9,pos:'SS',spd:'A',fld:5}],
+  "Rockies":    [{n:'Terry Shumpert',slot:1,pos:'2B',spd:'A',fld:4},{n:'Larry Walker',slot:2,pos:'LF',spd:'B',fld:0},{n:'Todd Helton',slot:3,pos:'1B',spd:'B',fld:0},{n:'Dante Bichette',slot:4,pos:'RF',spd:'B',fld:0},{n:'Vinny Castilla',slot:5,pos:'3B',spd:'B',fld:2},{n:'Kurt Abbott',slot:6,pos:'DH',spd:'B',fld:0},{n:'Neifi Perez',slot:7,pos:'SS',spd:'B',fld:5},{n:'Jeff Barry',slot:8,pos:'CF',spd:'C',fld:0},{n:'Henry Blanco',slot:9,pos:'C',spd:'B',fld:8}],
+  "White Sox":    [{n:'Ray Durham',slot:1,pos:'2B',spd:'A',fld:2},{n:'Magglio Ordonez',slot:2,pos:'LF',spd:'B',fld:2},{n:'Frank Thomas',slot:3,pos:'DH',spd:'B',fld:0},{n:'Paul Konerko',slot:4,pos:'1B',spd:'C',fld:0},{n:'Greg Norton',slot:5,pos:'3B',spd:'B',fld:0},{n:'Brook Fordyce',slot:6,pos:'C',spd:'B',fld:6},{n:'Carlos Lee',slot:7,pos:'RF',spd:'B',fld:1},{n:'Chris Singleton',slot:8,pos:'CF',spd:'A',fld:3},{n:'Mike Caruso',slot:9,pos:'SS',spd:'B',fld:3}],
+  "Tigers":    [{n:'Damion Easley',slot:1,pos:'2B',spd:'B',fld:2},{n:'Bobby Higginson',slot:2,pos:'RF',spd:'B',fld:1},{n:'Tony Clark',slot:3,pos:'DH',spd:'B',fld:0},{n:'Dean Palmer',slot:4,pos:'3B',spd:'B',fld:1},{n:'Gabe Kapler',slot:5,pos:'CF',spd:'A',fld:2},{n:'Brad Ausmus',slot:6,pos:'C',spd:'B',fld:7},{n:'Frank Catalanotto',slot:7,pos:'1B',spd:'B',fld:1},{n:'Juan Encarnacion',slot:8,pos:'LF',spd:'A',fld:2},{n:'Deivi Cruz',slot:9,pos:'SS',spd:'C',fld:5}],
+  "Marlins":    [{n:'Luis Castillo',slot:1,pos:'2B',spd:'A',fld:3},{n:'Bruce Aven',slot:2,pos:'LF',spd:'B',fld:1},{n:'Preston Wilson',slot:3,pos:'CF',spd:'B',fld:0},{n:'Dave Berg',slot:4,pos:'SS',spd:'B',fld:2},{n:'Mike Lowell',slot:5,pos:'3B',spd:'C',fld:2},{n:'Mike Redmond',slot:6,pos:'C',spd:'C',fld:7},{n:'Derrek Lee',slot:7,pos:'1B',spd:'B',fld:1},{n:'Alex Gonzalez',slot:8,pos:'DH',spd:'B',fld:0},{n:'Mark Kotsay',slot:9,pos:'RF',spd:'B',fld:1}],
+  "Astros":    [{n:'Craig Biggio',slot:1,pos:'2B',spd:'A',fld:3},{n:'Carl Everett',slot:2,pos:'CF',spd:'A',fld:2},{n:'Jeff Bagwell',slot:3,pos:'1B',spd:'A',fld:0},{n:'Ken Caminiti',slot:4,pos:'DH',spd:'B',fld:0},{n:'Bill Spiers',slot:5,pos:'3B',spd:'B',fld:1},{n:'Stan Javier',slot:6,pos:'RF',spd:'A',fld:1},{n:'Richard Hidalgo',slot:7,pos:'LF',spd:'B',fld:1},{n:'Tim Bogar',slot:8,pos:'SS',spd:'B',fld:5},{n:'Tony Eusebio',slot:9,pos:'C',spd:'C',fld:7}],
+  "Royals":    [{n:'Johnny Damon',slot:1,pos:'LF',spd:'A',fld:1},{n:'Joe Randa',slot:2,pos:'3B',spd:'B',fld:1},{n:'Mike Sweeney',slot:3,pos:'1B',spd:'B',fld:0},{n:'Jermaine Dye',slot:4,pos:'RF',spd:'B',fld:1},{n:'Jeremy Giambi',slot:5,pos:'DH',spd:'C',fld:0},{n:'Tim Spehr',slot:6,pos:'C',spd:'B',fld:3},{n:'Carlos Beltran',slot:7,pos:'CF',spd:'A',fld:1},{n:'Carlos Febles',slot:8,pos:'2B',spd:'A',fld:2},{n:'Rey Sanchez',slot:9,pos:'SS',spd:'B',fld:5}],
+  "Dodgers":    [{n:'Eric Young',slot:1,pos:'2B',spd:'A',fld:3},{n:'Adrian Beltre',slot:2,pos:'3B',spd:'A',fld:2},{n:'Gary Sheffield',slot:3,pos:'RF',spd:'B',fld:0},{n:'Raul Mondesi',slot:4,pos:'LF',spd:'A',fld:1},{n:'Eric Karros',slot:5,pos:'1B',spd:'B',fld:0},{n:'Dave Hansen',slot:6,pos:'DH',spd:'C',fld:0},{n:'Mark Grudzielanek',slot:7,pos:'SS',spd:'B',fld:1},{n:'Todd Hundley',slot:8,pos:'C',spd:'B',fld:4},{n:'Devon White',slot:9,pos:'CF',spd:'A',fld:1}],
+  "Brewers":    [{n:'Alex Ochoa',slot:1,pos:'LF',spd:'B',fld:1},{n:'Jeff Cirillo',slot:2,pos:'3B',spd:'B',fld:3},{n:'Jeromy Burnitz',slot:3,pos:'DH',spd:'B',fld:0},{n:'Dave Nilsson',slot:4,pos:'C',spd:'C',fld:4},{n:'Geoff Jenkins',slot:5,pos:'RF',spd:'B',fld:1},{n:'Marquis Grissom',slot:6,pos:'CF',spd:'A',fld:1},{n:'Ron Belliard',slot:7,pos:'2B',spd:'B',fld:2},{n:'Jose Valentin',slot:8,pos:'SS',spd:'B',fld:1},{n:'Mark Loretta',slot:9,pos:'1B',spd:'B',fld:1}],
+  "Twins":    [{n:'Matt Lawton',slot:1,pos:'RF',spd:'A',fld:1},{n:'Chad Allen',slot:2,pos:'LF',spd:'A',fld:1},{n:'Corey Koskie',slot:3,pos:'DH',spd:'B',fld:0},{n:'Ron Coomer',slot:4,pos:'3B',spd:'B',fld:1},{n:'Terry Steinbach',slot:5,pos:'C',spd:'B',fld:4},{n:'Todd Walker',slot:6,pos:'2B',spd:'A',fld:1},{n:'Doug Mientkiewicz',slot:7,pos:'1B',spd:'C',fld:1},{n:'Torii Hunter',slot:8,pos:'CF',spd:'B',fld:1},{n:'Denny Hocking',slot:9,pos:'SS',spd:'A',fld:2}],
+  "Expos":    [{n:'Jose Vidro',slot:1,pos:'2B',spd:'C',fld:1},{n:'Rondell White',slot:2,pos:'CF',spd:'B',fld:2},{n:'Vladimir Guerrero',slot:3,pos:'RF',spd:'B',fld:1},{n:'Chris Widger',slot:4,pos:'C',spd:'C',fld:4},{n:'Brad Fullmer',slot:5,pos:'1B',spd:'B',fld:0},{n:'Orlando Cabrera',slot:6,pos:'SS',spd:'B',fld:5},{n:'Michael Barrett',slot:7,pos:'DH',spd:'C',fld:0},{n:'Shane Andrews',slot:8,pos:'3B',spd:'C',fld:1},{n:'Manny Martinez',slot:9,pos:'LF',spd:'A',fld:1}],
+  "Mets":    [{n:'Rickey Henderson',slot:1,pos:'LF',spd:'A',fld:1},{n:'Roger Cedeno',slot:2,pos:'RF',spd:'A',fld:1},{n:'John Olerud',slot:3,pos:'1B',spd:'C',fld:1},{n:'Mike Piazza',slot:4,pos:'C',spd:'B',fld:4},{n:'Edgardo Alfonzo',slot:5,pos:'2B',spd:'B',fld:5},{n:'Robin Ventura',slot:6,pos:'3B',spd:'C',fld:3},{n:'Darryl Hamilton',slot:7,pos:'DH',spd:'B',fld:0},{n:'Shawon Dunston',slot:8,pos:'CF',spd:'A',fld:2},{n:'Rey Ordonez',slot:9,pos:'SS',spd:'B',fld:5}],
+  "Yankees":    [{n:'Derek Jeter',slot:1,pos:'SS',spd:'B',fld:3},{n:'Chuck Knoblauch',slot:2,pos:'2B',spd:'A',fld:1},{n:'Chad Curtis',slot:3,pos:'LF',spd:'B',fld:2},{n:'Bernie Williams',slot:4,pos:'CF',spd:'B',fld:1},{n:"Paul O'Neill",slot:5,pos:'RF',spd:'B',fld:1},{n:'Ricky Ledee',slot:6,pos:'DH',spd:'B',fld:0},{n:'Tino Martinez',slot:7,pos:'1B',spd:'B',fld:1},{n:'Jorge Posada',slot:8,pos:'C',spd:'C',fld:5},{n:'Scott Brosius',slot:9,pos:'3B',spd:'B',fld:3}],
+  "Athletics":    [{n:'Randy Velarde',slot:1,pos:'2B',spd:'A',fld:4},{n:'Tony Phillips',slot:2,pos:'CF',spd:'B',fld:1},{n:'Jason Giambi',slot:3,pos:'1B',spd:'C',fld:0},{n:'John Jaha',slot:4,pos:'DH',spd:'C',fld:0},{n:'Matt Stairs',slot:5,pos:'LF',spd:'B',fld:0},{n:'Ben Grieve',slot:6,pos:'RF',spd:'B',fld:1},{n:'Miguel Tejada',slot:7,pos:'SS',spd:'B',fld:2},{n:'Eric Chavez',slot:8,pos:'3B',spd:'C',fld:3},{n:'A.J. Hinch',slot:9,pos:'C',spd:'A',fld:5}],
+  "Phillies":    [{n:'Bobby Abreu',slot:1,pos:'LF',spd:'A',fld:1},{n:'Doug Glanville',slot:2,pos:'CF',spd:'A',fld:2},{n:'Scott Rolen',slot:3,pos:'3B',spd:'B',fld:3},{n:'Ron Gant',slot:4,pos:'DH',spd:'B',fld:0},{n:'Mike Lieberthal',slot:5,pos:'C',spd:'C',fld:6},{n:'Rico Brogna',slot:6,pos:'1B',spd:'B',fld:1},{n:'Kevin Sefcik',slot:7,pos:'RF',spd:'A',fld:1},{n:'Alex Arias',slot:8,pos:'SS',spd:'B',fld:3},{n:'Marlon Anderson',slot:9,pos:'2B',spd:'A',fld:3}],
+  "Pirates":    [{n:'Jason Kendall',slot:1,pos:'C',spd:'A',fld:9},{n:'Kevin Young',slot:2,pos:'1B',spd:'A',fld:1},{n:'Brian Giles',slot:3,pos:'CF',spd:'B',fld:1},{n:'Al Martin',slot:5,pos:'LF',spd:'A',fld:1},{n:'Ed Sprague',slot:6,pos:'3B',spd:'B',fld:0},{n:'Adrian Brown',slot:6,pos:'DH',spd:'B',fld:0},{n:'Brant Brown',slot:7,pos:'RF',spd:'B',fld:1},{n:'Warren Morris',slot:8,pos:'2B',spd:'B',fld:3},{n:'Mike Benjamin',slot:9,pos:'SS',spd:'A',fld:5}],
+  "Padres":    [{n:'Quilvio Veras',slot:1,pos:'2B',spd:'A',fld:3},{n:'Tony Gwynn',slot:2,pos:'DH',spd:'B',fld:0},{n:'Reggie Sanders',slot:3,pos:'RF',spd:'A',fld:1},{n:'John Vander Wal',slot:4,pos:'1B',spd:'B',fld:0},{n:'Phil Nevin',slot:5,pos:'3B',spd:'C',fld:3},{n:'Ruben Rivera',slot:6,pos:'LF',spd:'A',fld:2},{n:'Damian Jackson',slot:7,pos:'SS',spd:'A',fld:3},{n:'Eric Owens',slot:8,pos:'CF',spd:'A',fld:2},{n:'Ben Davis',slot:9,pos:'C',spd:'B',fld:9}],
+  "Mariners":    [{n:'Edgar Martinez',slot:1,pos:'DH',spd:'B',fld:0},{n:'Alex Rodriguez',slot:2,pos:'SS',spd:'A',fld:5},{n:'Ken Griffey Jr.',slot:3,pos:'CF',spd:'A',fld:2},{n:'Jay Buhner',slot:4,pos:'RF',spd:'C',fld:0},{n:'Tom Lampkin',slot:5,pos:'C',spd:'B',fld:9},{n:'Russ Davis',slot:6,pos:'3B',spd:'C',fld:0},{n:'Raul Ibanez',slot:7,pos:'1B',spd:'B',fld:0},{n:'David Bell',slot:8,pos:'2B',spd:'B',fld:3},{n:'Brian L. Hunter',slot:9,pos:'LF',spd:'A',fld:2}],
+  "Giants":    [{n:'F.P. Santangelo',slot:1,pos:'RF',spd:'A',fld:1},{n:'Jeff Kent',slot:2,pos:'2B',spd:'B',fld:3},{n:'Barry Bonds',slot:3,pos:'LF',spd:'A',fld:1},{n:'Ellis Burks',slot:4,pos:'DH',spd:'B',fld:0},{n:'J.T. Snow',slot:5,pos:'1B',spd:'C',fld:0},{n:'Brent Mayne',slot:6,pos:'C',spd:'B',fld:6},{n:'Bill Mueller',slot:7,pos:'3B',spd:'B',fld:3},{n:'Rich Aurilia',slot:8,pos:'SS',spd:'B',fld:3},{n:'Marvin Benard',slot:9,pos:'CF',spd:'A',fld:1}],
+  "Cardinals":    [{n:'Ray Lankford',slot:1,pos:'RF',spd:'A',fld:2},{n:'J.D. Drew',slot:2,pos:'CF',spd:'A',fld:1},{n:'Fernando Tatis',slot:3,pos:'3B',spd:'A',fld:1},{n:'Mark McGwire',slot:4,pos:'1B',spd:'C',fld:0},{n:'Darren Bragg',slot:5,pos:'LF',spd:'B',fld:2},{n:'Edgar Renteria',slot:6,pos:'SS',spd:'A',fld:3},{n:'Joe McEwing',slot:7,pos:'2B',spd:'B',fld:3},{n:'Alberto Castillo',slot:8,pos:'C',spd:'C',fld:10},{n:'Willie McGee',slot:9,pos:'DH',spd:'B',fld:0}],
+  "Devil Rays":    [{n:'Kevin Stocker',slot:1,pos:'SS',spd:'A',fld:4},{n:'Wade Boggs',slot:2,pos:'3B',spd:'C',fld:1},{n:'Fred McGriff',slot:3,pos:'1B',spd:'C',fld:0},{n:'Bubba Trammell',slot:4,pos:'LF',spd:'C',fld:1},{n:'Jose Canseco',slot:5,pos:'DH',spd:'B',fld:0},{n:'Paul Sorrento',slot:6,pos:'RF',spd:'C',fld:0},{n:'Dave Martinez',slot:7,pos:'CF',spd:'B',fld:0},{n:'John Flaherty',slot:8,pos:'C',spd:'C',fld:8},{n:'Miguel Cairo',slot:9,pos:'2B',spd:'A',fld:4}],
+  "Rangers":    [{n:'Rusty Greer',slot:1,pos:'LF',spd:'C',fld:1},{n:'Ivan Rodriguez',slot:2,pos:'C',spd:'A',fld:11},{n:'Juan Gonzalez',slot:3,pos:'RF',spd:'B',fld:0},{n:'Rafael Palmiero',slot:4,pos:'DH',spd:'C',fld:0},{n:'Todd Zeile',slot:5,pos:'3B',spd:'C',fld:1},{n:'Royce Clayton',slot:6,pos:'SS',spd:'B',fld:4},{n:'Lee Stevens',slot:7,pos:'1B',spd:'B',fld:1},{n:'Mark McLemore',slot:8,pos:'2B',spd:'B',fld:3},{n:'Tom Goodwin',slot:9,pos:'CF',spd:'A',fld:2}],
+  "Blue Jays":    [{n:'Shannon Stewart',slot:1,pos:'LF',spd:'A',fld:1},{n:'Tony Fernandez',slot:2,pos:'3B',spd:'B',fld:1},{n:'Shawn Green',slot:3,pos:'RF',spd:'A',fld:1},{n:'Carlos Delgado',slot:4,pos:'DH',spd:'C',fld:0},{n:'Jose Cruz Jr.',slot:5,pos:'CF',spd:'A',fld:1},{n:'David Segui',slot:6,pos:'1B',spd:'C',fld:0},{n:'Darrin Fletcher',slot:7,pos:'C',spd:'C',fld:5},{n:'Tony Batista',slot:8,pos:'SS',spd:'B',fld:3},{n:'Homer Bush',slot:9,pos:'2B',spd:'A',fld:2}],
+};
+
+const PLAYER_ATTRS = (()=>{
+  const raw = [
+    ['A.J. Hinch','A',5,'C'],
+    ['Aaron Boone','A',2,'3B'],
+    ['Adrian Beltre','A',2,'3B'],
+    ['Adrian Brown','B',0,'DH'],
+    ['Al Martin','A',1,'LF'],
+    ['Albert Belle','B',0,'DH'],
+    ['Alberto Castillo','C',10,'C'],
+    ['Alex Arias','B',3,'SS'],
+    ['Alex Gonzalez','B',0,'DH'],
+    ['Alex Ochoa','B',1,'LF'],
+    ['Alex Rodriguez','A',5,'SS'],
+    ['Andruw Jones','A',3,'CF'],
+    ['B.J. Surhoff','B',2,'LF'],
+    ['Barry Bonds','A',1,'LF'],
+    ['Barry Larkin','A',5,'SS'],
+    ['Ben Davis','B',9,'C'],
+    ['Ben Grieve','B',1,'RF'],
+    ['Benito Santiago','B',7,'C'],
+    ['Bernard Gilkey','B',0,'DH'],
+    ['Bernie Williams','B',1,'CF'],
+    ['Bill Mueller','B',3,'3B'],
+    ['Bill Spiers','B',1,'3B'],
+    ['Bobby Abreu','A',1,'LF'],
+    ['Bobby Higginson','B',1,'RF'],
+    ['Brad Ausmus','B',7,'C'],
+    ['Brad Fullmer','B',0,'1B'],
+    ['Brady Anderson','A',1,'CF'],
+    ['Brant Brown','B',1,'RF'],
+    ['Brent Mayne','B',6,'C'],
+    ['Bret Boone','B',2,'2B'],
+    ['Brian Giles','B',1,'CF'],
+    ['Brian Hunter','C',1,'1B'],
+    ['Brian Jordan','B',1,'LF'],
+    ['Brian L. Hunter','A',2,'LF'],
+    ['Brook Fordyce','B',6,'C'],
+    ['Bruce Aven','B',1,'LF'],
+    ['Bubba Trammell','C',1,'LF'],
+    ['Butch Huskey','B',2,'LF'],
+    ['Cal Ripken Jr.','C',2,'3B'],
+    ['Carl Everett','A',2,'CF'],
+    ['Carlos Beltran','A',1,'CF'],
+    ['Carlos Delgado','C',0,'DH'],
+    ['Carlos Febles','A',2,'2B'],
+    ['Carlos Lee','B',1,'RF'],
+    ['Chad Allen','A',1,'LF'],
+    ['Chad Curtis','B',2,'LF'],
+    ['Charles Johnson','C',8,'C'],
+    ['Chipper Jones','A',2,'3B'],
+    ['Chris Singleton','A',3,'CF'],
+    ['Chris Widger','C',4,'C'],
+    ['Chuck Knoblauch','A',1,'2B'],
+    ['Corey Koskie','B',0,'DH'],
+    ['Craig Biggio','A',3,'2B'],
+    ['Damian Jackson','A',3,'SS'],
+    ['Damion Easley','B',2,'2B'],
+    ['Damon Buford','A',1,'CF'],
+    ['Dante Bichette','B',0,'RF'],
+    ['Darren Bragg','B',2,'LF'],
+    ['Darrin Fletcher','C',5,'C'],
+    ['Darryl Hamilton','B',0,'DH'],
+    ['Dave Berg','B',2,'SS'],
+    ['Dave Hansen','C',0,'DH'],
+    ['Dave Martinez','B',0,'CF'],
+    ['Dave Nilsson','C',4,'C'],
+    ['David Bell','B',3,'2B'],
+    ['David Justice','C',2,'LF'],
+    ['David Segui','C',0,'1B'],
+    ['Dean Palmer','B',1,'3B'],
+    ['Deivi Cruz','C',5,'SS'],
+    ['Delino Deshields','A',3,'2B'],
+    ['Denny Hocking','A',2,'SS'],
+    ['Derek Jeter','B',3,'SS'],
+    ['Derrek Lee','B',1,'1B'],
+    ['Devon White','A',1,'CF'],
+    ['Dmitri Young','B',0,'DH'],
+    ['Doug Glanville','A',2,'CF'],
+    ['Doug Mientkiewicz','C',1,'1B'],
+    ['Ed Sprague','B',0,'3B'],
+    ['Eddie Perez','C',6,'C'],
+    ['Eddie Taubensee','C',2,'C'],
+    ['Edgar Martinez','B',0,'DH'],
+    ['Edgar Renteria','A',3,'SS'],
+    ['Edgardo Alfonzo','B',5,'2B'],
+    ['Einar Diaz','B',7,'C'],
+    ['Ellis Burks','B',0,'DH'],
+    ['Eric Chavez','C',3,'3B'],
+    ['Eric Karros','B',0,'1B'],
+    ['Eric Owens','A',2,'CF'],
+    ['Eric Young','A',3,'2B'],
+    ['F.P. Santangelo','A',1,'RF'],
+    ['Fernando Tatis','A',1,'3B'],
+    ['Frank Catalanotto','B',1,'1B'],
+    ['Frank Thomas','B',0,'DH'],
+    ['Fred McGriff','C',0,'1B'],
+    ['Gabe Kapler','A',2,'CF'],
+    ['Garret Anderson','B',3,'CF'],
+    ['Gary DiSarcina','B',4,'SS'],
+    ['Gary Gaetti','C',3,'3B'],
+    ['Gary Sheffield','B',0,'RF'],
+    ['Geoff Jenkins','B',1,'RF'],
+    ['Gerald Williams','A',1,'RF'],
+    ['Greg Norton','B',0,'3B'],
+    ['Greg Vaughn','A',2,'LF'],
+    ['Hanley Frias','B',1,'SS'],
+    ['Harold Baines','C',0,'DH'],
+    ['Henry Blanco','B',8,'C'],
+    ['Henry Rodriguez','B',1,'LF'],
+    ['Homer Bush','A',2,'2B'],
+    ['Ivan Rodriguez','A',11,'C'],
+    ['J.D. Drew','A',1,'CF'],
+    ['J.T. Snow','C',0,'1B'],
+    ['Jason Giambi','C',0,'1B'],
+    ['Jason Kendall','A',9,'C'],
+    ['Jason Varitek','C',5,'C'],
+    ['Jay Bell','B',2,'2B'],
+    ['Jay Buhner','C',0,'RF'],
+    ['Jeff Bagwell','A',0,'1B'],
+    ['Jeff Barry','C',0,'CF'],
+    ['Jeff Blauser','B',2,'SS'],
+    ['Jeff Cirillo','B',3,'3B'],
+    ['Jeff Conine','C',1,'1B'],
+    ['Jeff Huson','A',4,'2B'],
+    ['Jeff Kent','B',3,'2B'],
+    ['Jeff Reed','C',0,'DH'],
+    ['Jeremy Giambi','C',0,'DH'],
+    ['Jermaine Dye','B',1,'RF'],
+    ['Jeromy Burnitz','B',0,'DH'],
+    ['Jim Thome','C',0,'1B'],
+    ['Joe McEwing','B',3,'2B'],
+    ['Joe Randa','B',1,'3B'],
+    ['John Flaherty','C',8,'C'],
+    ['John Jaha','C',0,'DH'],
+    ['John Olerud','C',1,'1B'],
+    ['John Valentin','C',2,'3B'],
+    ['John Vander Wal','B',0,'1B'],
+    ['Johnny Damon','A',1,'LF'],
+    ['Jorge Posada','C',5,'C'],
+    ['Jose Canseco','B',0,'DH'],
+    ['Jose Cruz Jr.','A',1,'CF'],
+    ['Jose Hernandez','B',3,'SS'],
+    ['Jose Offerman','B',2,'2B'],
+    ['Jose Valentin','B',1,'SS'],
+    ['Jose Vidro','C',1,'2B'],
+    ['Juan Encarnacion','A',2,'LF'],
+    ['Juan Gonzalez','B',0,'RF'],
+    ['Kelly Stinnett','B',6,'C'],
+    ['Ken Caminiti','B',0,'DH'],
+    ['Ken Griffey Jr.','A',2,'CF'],
+    ['Kenny Lofton','A',2,'CF'],
+    ['Kevin Sefcik','A',1,'RF'],
+    ['Kevin Stocker','A',4,'SS'],
+    ['Kevin Young','A',1,'1B'],
+    ['Kurt Abbott','B',0,'DH'],
+    ['Lance Johnson','A',2,'CF'],
+    ['Larry Walker','B',0,'LF'],
+    ['Lee Stevens','B',1,'1B'],
+    ['Luis Castillo','A',3,'2B'],
+    ['Luis Gonzalez','B',2,'LF'],
+    ['Magglio Ordonez','B',2,'LF'],
+    ['Manny Martinez','A',1,'LF'],
+    ['Manny Ramirez','C',1,'RF'],
+    ['Mark Grace','B',0,'1B'],
+    ['Mark Grudzielanek','B',1,'SS'],
+    ['Mark Kotsay','B',1,'RF'],
+    ['Mark Loretta','B',1,'1B'],
+    ['Mark McGwire','C',0,'1B'],
+    ['Mark McLemore','B',3,'2B'],
+    ['Marlon Anderson','A',3,'2B'],
+    ['Marquis Grissom','A',1,'CF'],
+    ['Marvin Benard','A',1,'CF'],
+    ['Matt Lawton','A',1,'RF'],
+    ['Matt Stairs','B',0,'LF'],
+    ['Matt Walbeck','B',7,'C'],
+    ['Matt Williams','B',3,'3B'],
+    ['Michael Barrett','C',0,'DH'],
+    ['Michael Tucker','A',1,'RF'],
+    ['Mickey Morandini','B',3,'2B'],
+    ['Miguel Cairo','A',4,'2B'],
+    ['Miguel Tejada','B',2,'SS'],
+    ['Mike Benjamin','A',5,'SS'],
+    ['Mike Bordick','B',5,'SS'],
+    ['Mike Cameron','A',2,'CF'],
+    ['Mike Caruso','B',3,'SS'],
+    ['Mike Lieberthal','C',6,'C'],
+    ['Mike Lowell','C',2,'3B'],
+    ['Mike Piazza','B',4,'C'],
+    ['Mike Redmond','C',7,'C'],
+    ['Mike Stanley','C',0,'1B'],
+    ['Mike Sweeney','B',0,'1B'],
+    ['Mo Vaughn','C',0,'1B'],
+    ['Neifi Perez','B',5,'SS'],
+    ['Nomar Garciaparra','B',1,'SS'],
+    ['Omar Vizquel','A',5,'SS'],
+    ['Orlando Cabrera','B',5,'SS'],
+    ['Orlando Palmeiro','B',0,'DH'],
+    ['Paul Konerko','C',0,'1B'],
+    ["Paul O'Neill",'B',1,'RF'],
+    ['Paul Sorrento','C',0,'RF'],
+    ['Phil Nevin','C',3,'3B'],
+    ['Pokey Reese','A',5,'2B'],
+    ['Preston Wilson','B',0,'CF'],
+    ['Quilvio Veras','A',3,'2B'],
+    ['Rafael Palmiero','C',0,'DH'],
+    ['Randy Velarde','A',4,'2B'],
+    ['Raul Ibanez','B',0,'1B'],
+    ['Raul Mondesi','A',1,'LF'],
+    ['Ray Durham','A',2,'2B'],
+    ['Ray Lankford','A',2,'RF'],
+    ['Reggie Sanders','A',1,'RF'],
+    ['Rey Ordonez','B',5,'SS'],
+    ['Rey Sanchez','B',5,'SS'],
+    ['Rich Amaral','A',1,'RF'],
+    ['Rich Aurilia','B',3,'SS'],
+    ['Richard Hidalgo','B',1,'LF'],
+    ['Rickey Henderson','A',1,'LF'],
+    ['Ricky Ledee','B',0,'DH'],
+    ['Rico Brogna','B',1,'1B'],
+    ['Roberto Alomar','A',3,'2B'],
+    ['Robin Ventura','C',3,'3B'],
+    ['Roger Cedeno','A',1,'RF'],
+    ['Ron Belliard','B',2,'2B'],
+    ['Ron Coomer','B',1,'3B'],
+    ['Ron Gant','B',0,'DH'],
+    ['Rondell White','B',2,'CF'],
+    ['Royce Clayton','B',4,'SS'],
+    ['Ruben Rivera','A',2,'LF'],
+    ['Russ Davis','C',0,'3B'],
+    ['Rusty Greer','C',1,'LF'],
+    ['Ryan Klesko','B',0,'DH'],
+    ['Sammy Sosa','B',1,'RF'],
+    ['Scott Brosius','B',3,'3B'],
+    ['Scott Rolen','B',3,'3B'],
+    ['Sean Casey','C',0,'1B'],
+    ['Shane Andrews','C',1,'3B'],
+    ['Shannon Stewart','A',1,'LF'],
+    ['Shawn Green','A',1,'RF'],
+    ['Shawon Dunston','A',2,'CF'],
+    ['Stan Javier','A',1,'RF'],
+    ['Steve Finley','B',2,'CF'],
+    ['Terry Shumpert','A',4,'2B'],
+    ['Terry Steinbach','B',4,'C'],
+    ['Tim Bogar','B',5,'SS'],
+    ['Tim Salmon','B',1,'LF'],
+    ['Tim Spehr','B',3,'C'],
+    ['Tino Martinez','B',1,'1B'],
+    ['Todd Greene','B',1,'RF'],
+    ['Todd Helton','B',0,'1B'],
+    ['Todd Hundley','B',4,'C'],
+    ['Todd Walker','A',1,'2B'],
+    ['Todd Zeile','C',1,'3B'],
+    ['Tom Goodwin','A',2,'CF'],
+    ['Tom Lampkin','B',9,'C'],
+    ['Tony Batista','B',3,'SS'],
+    ['Tony Clark','B',0,'DH'],
+    ['Tony Eusebio','C',7,'C'],
+    ['Tony Fernandez','B',1,'3B'],
+    ['Tony Gwynn','B',0,'DH'],
+    ['Tony Phillips','B',1,'CF'],
+    ['Tony Womack','A',2,'RF'],
+    ['Torii Hunter','B',1,'CF'],
+    ['Travis Fryman','B',2,'3B'],
+    ['Travis Lee','A',0,'1B'],
+    ['Trot Nixon','B',1,'RF'],
+    ['Troy Glaus','B',1,'3B'],
+    ["Troy O'Leary",'C',0,'DH'],
+    ['Vinny Castilla','B',2,'3B'],
+    ['Vladimir Guerrero','B',1,'RF'],
+    ['Wade Boggs','C',1,'3B'],
+    ['Warren Morris','B',3,'2B'],
+    ['Willie McGee','B',0,'DH'],
+  ];
+  const map = {};
+  raw.forEach(([name, spd, fld, pos])=>{ map[name] = {spd, fld, pos}; });
+  return map;
+})();
+const ABBR_TO_NAME = {
+  ANA:"Angels",  ARI:"Diamondbacks",  ATL:"Braves",  BAL:"Orioles",  BOS:"Red Sox",  CHC:"Cubs",  CIN:"Reds",  CLE:"Indians",  COL:"Rockies",  CWS:"White Sox",  DET:"Tigers",  FLA:"Marlins",  HOU:"Astros",  KC:"Royals",  LAD:"Dodgers",  MIL:"Brewers",  MIN:"Twins",  MON:"Expos",  NYM:"Mets",  NYY:"Yankees",  OAK:"Athletics",  PHI:"Phillies",  PIT:"Pirates",  SD:"Padres",  SEA:"Mariners",  SF:"Giants",  STL:"Cardinals",  TB:"Devil Rays",  TEX:"Rangers",  TOR:"Blue Jays"
+};
+
+
+// Compute fielding splits: C, infield (1B+2B+SS+3B), outfield (LF+CF+RF)
+function teamFieldingSplit(lineup){
+  let c=0, inf=0, of=0;
+  lineup.forEach(p=>{
+    const a = PLAYER_ATTRS[p.name];
+    if(!a || p.pos==='DH') return;
+    const fld = a.fld || 0;
+    if(p.pos==='C') c += fld;
+    else if(['1B','2B','SS','3B'].includes(p.pos)) inf += fld;
+    else if(['LF','CF','RF'].includes(p.pos)) of += fld;
+  });
+  return {c, inf, of};
+}
+
+// Get speed for a player name
+function playerSpeed(name){
+  const a = PLAYER_ATTRS[name];
+  return a ? a.spd : '?';
+}
+
+const SCHED_NORM={SFG:'SF',SDP:'SD',LAA:'ANA',TBD:'TB',LAD:'LAD'};
+function normAbbr(a){return SCHED_NORM[a]||a;}
+
+const SCHEDULE=(()=>{
+  const raw=`1,NYY,FLA
+2,NYY,FLA
+3,NYY,FLA
+4,CWS,TEX
+5,CWS,TEX
+6,CWS,TEX
+7,BAL,TOR
+8,BAL,TOR
+9,BAL,TOR
+10,DET,CLE
+11,DET,CLE
+12,DET,CLE
+13,TBD,BOS
+14,TBD,BOS
+15,TBD,BOS
+16,LAA,HOU
+17,LAA,HOU
+18,LAA,HOU
+19,KC,MIN
+20,KC,MIN
+21,KC,MIN
+22,OAK,SEA
+23,OAK,SEA
+24,OAK,SEA
+25,CHC,STL
+26,CHC,STL
+27,CHC,STL
+28,MON,NYM
+29,MON,NYM
+30,MON,NYM
+31,CIN,SFG
+32,CIN,SFG
+33,CIN,SFG
+34,PHI,ATL
+35,PHI,ATL
+36,PHI,ATL
+37,PIT,MIL
+38,PIT,MIL
+39,PIT,MIL
+40,COL,ARI
+41,COL,ARI
+42,COL,ARI
+43,SDP,LAD
+44,SDP,LAD
+45,SDP,LAD
+46,BOS,MON
+47,BOS,MON
+48,BOS,MON
+49,MIN,DET
+50,MIN,DET
+51,MIN,DET
+52,TOR,NYY
+53,TOR,NYY
+54,TOR,NYY
+55,HOU,TEX
+56,HOU,TEX
+57,HOU,TEX
+58,OAK,CWS
+59,OAK,CWS
+60,OAK,CWS
+61,CLE,KC
+62,CLE,KC
+63,CLE,KC
+64,SEA,LAA
+65,SEA,LAA
+66,SEA,LAA
+67,TBD,BAL
+68,TBD,BAL
+69,TBD,BAL
+70,LAD,CIN
+71,LAD,CIN
+72,LAD,CIN
+73,STL,PIT
+74,STL,PIT
+75,STL,PIT
+76,ARI,SDP
+77,ARI,SDP
+78,ARI,SDP
+79,SFG,COL
+80,SFG,COL
+81,SFG,COL
+82,FLA,ATL
+83,FLA,ATL
+84,FLA,ATL
+85,NYM,PHI
+86,NYM,PHI
+87,NYM,PHI
+88,MIL,CHC
+89,MIL,CHC
+90,MIL,CHC
+91,TOR,PHI
+92,TOR,PHI
+93,TOR,PHI
+94,KC,CWS
+95,KC,CWS
+96,KC,CWS
+97,CLE,DET
+98,CLE,DET
+99,CLE,DET
+100,BAL,BOS
+101,BAL,BOS
+102,BAL,BOS
+103,HOU,LAA
+104,HOU,LAA
+105,HOU,LAA
+106,SEA,OAK
+107,SEA,OAK
+108,SEA,OAK
+109,TEX,MIN
+110,TEX,MIN
+111,TEX,MIN
+112,NYY,TBD
+113,NYY,TBD
+114,NYY,TBD
+115,PIT,CIN
+116,PIT,CIN
+117,PIT,CIN
+118,SFG,MIL
+119,SFG,MIL
+120,SFG,MIL
+121,STL,CHC
+122,STL,CHC
+123,STL,CHC
+124,ATL,MON
+125,ATL,MON
+126,ATL,MON
+127,ARI,COL
+128,ARI,COL
+129,ARI,COL
+130,FLA,NYM
+131,FLA,NYM
+132,FLA,NYM
+133,LAD,SDP
+134,LAD,SDP
+135,LAD,SDP
+136,TEX,ARI
+137,TEX,ARI
+138,TEX,ARI
+139,NYY,TOR
+140,NYY,TOR
+141,NYY,TOR
+142,BOS,TBD
+143,BOS,TBD
+144,BOS,TBD
+145,OAK,HOU
+146,OAK,HOU
+147,OAK,HOU
+148,DET,BAL
+149,DET,BAL
+150,DET,BAL
+151,CWS,MIN
+152,CWS,MIN
+153,CWS,MIN
+154,KC,CLE
+155,KC,CLE
+156,KC,CLE
+157,LAA,SEA
+158,LAA,SEA
+159,LAA,SEA
+160,SDP,COL
+161,SDP,COL
+162,SDP,COL
+163,LAD,SFG
+164,LAD,SFG
+165,LAD,SFG
+166,MON,FLA
+167,MON,FLA
+168,MON,FLA
+169,NYM,STL
+170,NYM,STL
+171,NYM,STL
+172,CHC,CIN
+173,CHC,CIN
+174,CHC,CIN
+175,ATL,PHI
+176,ATL,PHI
+177,ATL,PHI
+178,MIL,PIT
+179,MIL,PIT
+180,MIL,PIT
+181,CLE,PIT
+182,CLE,PIT
+183,CLE,PIT
+184,DET,MIN
+185,DET,MIN
+186,DET,MIN
+187,CWS,KC
+188,CWS,KC
+189,CWS,KC
+190,TBD,TOR
+191,TBD,TOR
+192,TBD,TOR
+193,BOS,BAL
+194,BOS,BAL
+195,BOS,BAL
+196,LAA,HOU
+197,LAA,HOU
+198,LAA,HOU
+199,OAK,SEA
+200,OAK,SEA
+201,OAK,SEA
+202,TEX,NYY
+203,TEX,NYY
+204,TEX,NYY
+205,NYM,MON
+206,NYM,MON
+207,NYM,MON
+208,CIN,MIL
+209,CIN,MIL
+210,CIN,MIL
+211,PHI,FLA
+212,PHI,FLA
+213,PHI,FLA
+214,CHC,STL
+215,CHC,STL
+216,CHC,STL
+217,COL,ARI
+218,COL,ARI
+219,COL,ARI
+220,SDP,LAD
+221,SDP,LAD
+222,SDP,LAD
+223,ATL,SFG
+224,ATL,SFG
+225,ATL,SFG
+226,BAL,NYM
+227,BAL,NYM
+228,BAL,NYM
+229,TOR,BOS
+230,TOR,BOS
+231,TOR,BOS
+232,CLE,OAK
+233,CLE,OAK
+234,CLE,OAK
+235,DET,CWS
+236,DET,CWS
+237,DET,CWS
+238,TEX,HOU
+239,TEX,HOU
+240,TEX,HOU
+241,MIN,KC
+242,MIN,KC
+243,MIN,KC
+244,SEA,LAA
+245,SEA,LAA
+246,SEA,LAA
+247,TBD,NYY
+248,TBD,NYY
+249,TBD,NYY
+250,FLA,MON
+251,FLA,MON
+252,FLA,MON
+253,SDP,ARI
+254,SDP,ARI
+255,SDP,ARI
+256,COL,SFG
+257,COL,SFG
+258,COL,SFG
+259,PHI,ATL
+260,PHI,ATL
+261,PHI,ATL
+262,CIN,STL
+263,CIN,STL
+264,CIN,STL
+265,PIT,MIL
+266,PIT,MIL
+267,PIT,MIL
+268,CHC,LAD
+269,CHC,LAD
+270,CHC,LAD
+271,FLA,TBD
+272,FLA,TBD
+273,FLA,TBD
+274,MIN,LAA
+275,MIN,LAA
+276,MIN,LAA
+277,NYY,BOS
+278,NYY,BOS
+279,NYY,BOS
+280,TOR,BAL
+281,TOR,BAL
+282,TOR,BAL
+283,CWS,CLE
+284,CWS,CLE
+285,CWS,CLE
+286,KC,DET
+287,KC,DET
+288,KC,DET
+289,TEX,OAK
+290,TEX,OAK
+291,TEX,OAK
+292,HOU,SEA
+293,HOU,SEA
+294,HOU,SEA
+295,COL,LAD
+296,COL,LAD
+297,COL,LAD
+298,MIL,STL
+299,MIL,STL
+300,MIL,STL
+301,SFG,SDP
+302,SFG,SDP
+303,SFG,SDP
+304,PIT,CHC
+305,PIT,CHC
+306,PIT,CHC
+307,MON,PHI
+308,MON,PHI
+309,MON,PHI
+310,ARI,CIN
+311,ARI,CIN
+312,ARI,CIN
+313,ATL,NYM
+314,ATL,NYM
+315,ATL,NYM
+316,TBD,ATL
+317,TBD,ATL
+318,TBD,ATL
+319,BOS,TOR
+320,BOS,TOR
+321,BOS,TOR
+322,MIN,CWS
+323,MIN,CWS
+324,MIN,CWS
+325,LAA,OAK
+326,LAA,OAK
+327,LAA,OAK
+328,DET,CLE
+329,DET,CLE
+330,DET,CLE
+331,SEA,TEX
+332,SEA,TEX
+333,SEA,TEX
+334,HOU,KC
+335,HOU,KC
+336,HOU,KC
+337,BAL,NYY
+338,BAL,NYY
+339,BAL,NYY
+340,COL,SDP
+341,COL,SDP
+342,COL,SDP
+343,FLA,PIT
+344,FLA,PIT
+345,FLA,PIT
+346,PHI,NYM
+347,PHI,NYM
+348,PHI,NYM
+349,STL,CIN
+350,STL,CIN
+351,STL,CIN
+352,SFG,ARI
+353,SFG,ARI
+354,SFG,ARI
+355,CHC,MIL
+356,CHC,MIL
+357,CHC,MIL
+358,LAD,MON
+359,LAD,MON
+360,LAD,MON
+361,HOU,COL
+362,HOU,COL
+363,HOU,COL
+364,MIN,SEA
+365,MIN,SEA
+366,MIN,SEA
+367,CLE,CWS
+368,CLE,CWS
+369,CLE,CWS
+370,BOS,NYY
+371,BOS,NYY
+372,BOS,NYY
+373,DET,KC
+374,DET,KC
+375,DET,KC
+376,LAA,TEX
+377,LAA,TEX
+378,LAA,TEX
+379,BAL,TBD
+380,BAL,TBD
+381,BAL,TBD
+382,TOR,OAK
+383,TOR,OAK
+384,TOR,OAK
+385,CIN,FLA
+386,CIN,FLA
+387,CIN,FLA
+388,ARI,LAD
+389,ARI,LAD
+390,ARI,LAD
+391,SDP,SFG
+392,SDP,SFG
+393,SDP,SFG
+394,STL,MIL
+395,STL,MIL
+396,STL,MIL
+397,CHC,PIT
+398,CHC,PIT
+399,CHC,PIT
+400,PHI,MON
+401,PHI,MON
+402,PHI,MON
+403,NYM,ATL
+404,NYM,ATL
+405,NYM,ATL
+406,CIN,DET
+407,CIN,DET
+408,CIN,DET
+409,TOR,BOS
+410,TOR,BOS
+411,TOR,BOS
+412,OAK,LAA
+413,OAK,LAA
+414,OAK,LAA
+415,TEX,SEA
+416,TEX,SEA
+417,TEX,SEA
+418,CLE,TBD
+419,CLE,TBD
+420,CLE,TBD
+421,NYY,BAL
+422,NYY,BAL
+423,NYY,BAL
+424,KC,MIN
+425,KC,MIN
+426,KC,MIN
+427,CWS,HOU
+428,CWS,HOU
+429,CWS,HOU
+430,MON,STL
+431,MON,STL
+432,MON,STL
+433,SFG,LAD
+434,SFG,LAD
+435,SFG,LAD
+436,SDP,COL
+437,SDP,COL
+438,SDP,COL
+439,NYM,ARI
+440,NYM,ARI
+441,NYM,ARI
+442,ATL,FLA
+443,ATL,FLA
+444,ATL,FLA
+445,MIL,CHC
+446,MIL,CHC
+447,MIL,CHC
+448,PIT,PHI
+449,PIT,PHI
+450,PIT,PHI
+451,STL,CWS
+452,STL,CWS
+453,STL,CWS
+454,TOR,CLE
+455,TOR,CLE
+456,TOR,CLE
+457,NYY,BOS
+458,NYY,BOS
+459,NYY,BOS
+460,SEA,HOU
+461,SEA,HOU
+462,SEA,HOU
+463,OAK,MIN
+464,OAK,MIN
+465,OAK,MIN
+466,KC,DET
+467,KC,DET
+468,KC,DET
+469,TEX,LAA
+470,TEX,LAA
+471,TEX,LAA
+472,TBD,BAL
+473,TBD,BAL
+474,TBD,BAL
+475,LAD,COL
+476,LAD,COL
+477,LAD,COL
+478,MIL,CIN
+479,MIL,CIN
+480,MIL,CIN
+481,SFG,SDP
+482,SFG,SDP
+483,SFG,SDP
+484,PIT,CHC
+485,PIT,CHC
+486,PIT,CHC
+487,MON,ATL
+488,MON,ATL
+489,MON,ATL
+490,NYM,FLA
+491,NYM,FLA
+492,NYM,FLA
+493,ARI,PHI
+494,ARI,PHI
+495,ARI,PHI
+496,SEA,SFG
+497,SEA,SFG
+498,SEA,SFG
+499,CWS,MIN
+500,CWS,MIN
+501,CWS,MIN
+502,CLE,DET
+503,CLE,DET
+504,CLE,DET
+505,TOR,NYY
+506,TOR,NYY
+507,TOR,NYY
+508,LAA,BAL
+509,LAA,BAL
+510,LAA,BAL
+511,OAK,TEX
+512,OAK,TEX
+513,OAK,TEX
+514,BOS,KC
+515,BOS,KC
+516,BOS,KC
+517,HOU,TBD
+518,HOU,TBD
+519,HOU,TBD
+520,COL,FLA
+521,COL,FLA
+522,COL,FLA
+523,LAD,ARI
+524,LAD,ARI
+525,LAD,ARI
+526,CIN,CHC
+527,CIN,CHC
+528,CIN,CHC
+529,MIL,STL
+530,MIL,STL
+531,MIL,STL
+532,SDP,PIT
+533,SDP,PIT
+534,SDP,PIT
+535,MON,PHI
+536,MON,PHI
+537,MON,PHI
+538,ATL,NYM
+539,ATL,NYM
+540,ATL,NYM
+541,CHC,CLE
+542,CHC,CLE
+543,CHC,CLE
+544,LAA,TOR
+545,LAA,TOR
+546,LAA,TOR
+547,TBD,BOS
+548,TBD,BOS
+549,TBD,BOS
+550,CWS,DET
+551,CWS,DET
+552,CWS,DET
+553,HOU,TEX
+554,HOU,TEX
+555,HOU,TEX
+556,MIN,KC
+557,MIN,KC
+558,MIN,KC
+559,SEA,OAK
+560,SEA,OAK
+561,SEA,OAK
+562,BAL,NYY
+563,BAL,NYY
+564,BAL,NYY
+565,MON,SDP
+566,MON,SDP
+567,MON,SDP
+568,CIN,STL
+569,CIN,STL
+570,CIN,STL
+571,FLA,ATL
+572,FLA,ATL
+573,FLA,ATL
+574,NYM,PHI
+575,NYM,PHI
+576,NYM,PHI
+577,LAD,MIL
+578,LAD,MIL
+579,LAD,MIL
+580,COL,PIT
+581,COL,PIT
+582,COL,PIT
+583,ARI,SFG
+584,ARI,SFG
+585,ARI,SFG
+586,OAK,LAD
+587,OAK,LAD
+588,OAK,LAD
+589,NYY,LAA
+590,NYY,LAA
+591,NYY,LAA
+592,BAL,TEX
+593,BAL,TEX
+594,BAL,TEX
+595,CWS,CLE
+596,CWS,CLE
+597,CWS,CLE
+598,HOU,SEA
+599,HOU,SEA
+600,HOU,SEA
+601,KC,TOR
+602,KC,TOR
+603,KC,TOR
+604,MIN,BOS
+605,MIN,BOS
+606,MIN,BOS
+607,DET,TBD
+608,DET,TBD
+609,DET,TBD
+610,ATL,ARI
+611,ATL,ARI
+612,ATL,ARI
+613,CIN,PIT
+614,CIN,PIT
+615,CIN,PIT
+616,STL,SDP
+617,STL,SDP
+618,STL,SDP
+619,COL,MON
+620,COL,MON
+621,COL,MON
+622,PHI,CHC
+623,PHI,CHC
+624,PHI,CHC
+625,FLA,SFG
+626,FLA,SFG
+627,FLA,SFG
+628,MIL,NYM
+629,MIL,NYM
+630,MIL,NYM
+631,MIN,CIN
+632,MIN,CIN
+633,MIN,CIN
+634,BOS,NYY
+635,BOS,NYY
+636,BOS,NYY
+637,SEA,BAL
+638,SEA,BAL
+639,SEA,BAL
+640,CLE,HOU
+641,CLE,HOU
+642,CLE,HOU
+643,CWS,TOR
+644,CWS,TOR
+645,CWS,TOR
+646,LAA,KC
+647,LAA,KC
+648,LAA,KC
+649,TBD,OAK
+650,TBD,OAK
+651,TBD,OAK
+652,TEX,DET
+653,TEX,DET
+654,TEX,DET
+655,CHC,MON
+656,CHC,MON
+657,CHC,MON
+658,STL,LAD
+659,STL,LAD
+660,STL,LAD
+661,PIT,SFG
+662,PIT,SFG
+663,PIT,SFG
+664,PHI,COL
+665,PHI,COL
+666,PHI,COL
+667,SDP,MIL
+668,SDP,MIL
+669,SDP,MIL
+670,NYM,ATL
+671,NYM,ATL
+672,NYM,ATL
+673,ARI,FLA
+674,ARI,FLA
+675,ARI,FLA
+676,MIL,MIN
+677,MIL,MIN
+678,MIL,MIN
+679,NYY,OAK
+680,NYY,OAK
+681,NYY,OAK
+682,BAL,TOR
+683,BAL,TOR
+684,BAL,TOR
+685,KC,SEA
+686,KC,SEA
+687,KC,SEA
+688,DET,CWS
+689,DET,CWS
+690,DET,CWS
+691,LAA,TBD
+692,LAA,TBD
+693,LAA,TBD
+694,BOS,CLE
+695,BOS,CLE
+696,BOS,CLE
+697,TEX,HOU
+698,TEX,HOU
+699,TEX,HOU
+700,LAD,PIT
+701,LAD,PIT
+702,LAD,PIT
+703,CHC,CIN
+704,CHC,CIN
+705,CHC,CIN
+706,STL,PHI
+707,STL,PHI
+708,STL,PHI
+709,COL,NYM
+710,COL,NYM
+711,COL,NYM
+712,FLA,SDP
+713,FLA,SDP
+714,FLA,SDP
+715,ATL,MON
+716,ATL,MON
+717,ATL,MON
+718,SFG,ARI
+719,SFG,ARI
+720,SFG,ARI
+721,PHI,BOS
+722,PHI,BOS
+723,PHI,BOS
+724,TBD,CWS
+725,TBD,CWS
+726,TBD,CWS
+727,KC,TEX
+728,KC,TEX
+729,KC,TEX
+730,BAL,OAK
+731,BAL,OAK
+732,BAL,OAK
+733,NYY,CLE
+734,NYY,CLE
+735,NYY,CLE
+736,DET,LAA
+737,DET,LAA
+738,DET,LAA
+739,SEA,TOR
+740,SEA,TOR
+741,SEA,TOR
+742,MIN,HOU
+743,MIN,HOU
+744,MIN,HOU
+745,SDP,ATL
+746,SDP,ATL
+747,SDP,ATL
+748,MON,MIL
+749,MON,MIL
+750,MON,MIL
+751,ARI,LAD
+752,ARI,LAD
+753,ARI,LAD
+754,SFG,STL
+755,SFG,STL
+756,SFG,STL
+757,CHC,PIT
+758,CHC,PIT
+759,CHC,PIT
+760,CIN,COL
+761,CIN,COL
+762,CIN,COL
+763,FLA,NYM
+764,FLA,NYM
+765,FLA,NYM
+766,PIT,DET
+767,PIT,DET
+768,PIT,DET
+769,NYY,SEA
+770,NYY,SEA
+771,NYY,SEA
+772,KC,BAL
+773,KC,BAL
+774,KC,BAL
+775,TOR,HOU
+776,TOR,HOU
+777,TOR,HOU
+778,TEX,TBD
+779,TEX,TBD
+780,TEX,TBD
+781,CLE,MIN
+782,CLE,MIN
+783,CLE,MIN
+784,LAA,CWS
+785,LAA,CWS
+786,LAA,CWS
+787,BOS,OAK
+788,BOS,OAK
+789,BOS,OAK
+790,MIL,COL
+791,MIL,COL
+792,MIL,COL
+793,NYM,SDP
+794,NYM,SDP
+795,NYM,SDP
+796,ATL,LAD
+797,ATL,LAD
+798,ATL,LAD
+799,SFG,CHC
+800,SFG,CHC
+801,SFG,CHC
+802,STL,ARI
+803,STL,ARI
+804,STL,ARI
+805,MON,CIN
+806,MON,CIN
+807,MON,CIN
+808,FLA,PHI
+809,FLA,PHI
+810,FLA,PHI
+811,TOR,MON
+812,TOR,MON
+813,TOR,MON
+814,OAK,DET
+815,OAK,DET
+816,OAK,DET
+817,TBD,KC
+818,TBD,KC
+819,TBD,KC
+820,HOU,BOS
+821,HOU,BOS
+822,HOU,BOS
+823,CWS,NYY
+824,CWS,NYY
+825,CWS,NYY
+826,BAL,MIN
+827,BAL,MIN
+828,BAL,MIN
+829,LAA,TEX
+830,LAA,TEX
+831,LAA,TEX
+832,SEA,CLE
+833,SEA,CLE
+834,SEA,CLE
+835,LAD,NYM
+836,LAD,NYM
+837,LAD,NYM
+838,SDP,CHC
+839,SDP,CHC
+840,SDP,CHC
+841,ARI,MIL
+842,ARI,MIL
+843,ARI,MIL
+844,PIT,CIN
+845,PIT,CIN
+846,PIT,CIN
+847,COL,ATL
+848,COL,ATL
+849,COL,ATL
+850,PHI,SFG
+851,PHI,SFG
+852,PHI,SFG
+853,STL,FLA
+854,STL,FLA
+855,STL,FLA
+856,MIL,KC
+857,MIL,KC
+858,MIL,KC
+859,LAA,OAK
+860,LAA,OAK
+861,LAA,OAK
+862,CLE,CWS
+863,CLE,CWS
+864,CLE,CWS
+865,HOU,DET
+866,HOU,DET
+867,HOU,DET
+868,SEA,TEX
+869,SEA,TEX
+870,SEA,TEX
+871,MIN,NYY
+872,MIN,NYY
+873,MIN,NYY
+874,BOS,TOR
+875,BOS,TOR
+876,BOS,TOR
+877,BAL,TBD
+878,BAL,TBD
+879,BAL,TBD
+880,COL,LAD
+881,COL,LAD
+882,COL,LAD
+883,ARI,CHC
+884,ARI,CHC
+885,ARI,CHC
+886,PHI,SDP
+887,PHI,SDP
+888,PHI,SDP
+889,ATL,FLA
+890,ATL,FLA
+891,ATL,FLA
+892,SFG,MON
+893,SFG,MON
+894,SFG,MON
+895,STL,CIN
+896,STL,CIN
+897,STL,CIN
+898,PIT,NYM
+899,PIT,NYM
+900,PIT,NYM
+901,NYM,NYY
+902,NYM,NYY
+903,NYM,NYY
+904,MIN,CWS
+905,MIN,CWS
+906,MIN,CWS
+907,CLE,LAA
+908,CLE,LAA
+909,CLE,LAA
+910,BOS,SEA
+911,BOS,SEA
+912,BOS,SEA
+913,TOR,TBD
+914,TOR,TBD
+915,TOR,TBD
+916,HOU,BAL
+917,HOU,BAL
+918,HOU,BAL
+919,DET,KC
+920,DET,KC
+921,DET,KC
+922,TEX,OAK
+923,TEX,OAK
+924,TEX,OAK
+925,COL,SDP
+926,COL,SDP
+927,COL,SDP
+928,ATL,PIT
+929,ATL,PIT
+930,ATL,PIT
+931,LAD,SFG
+932,LAD,SFG
+933,LAD,SFG
+934,FLA,CHC
+935,FLA,CHC
+936,FLA,CHC
+937,CIN,PHI
+938,CIN,PHI
+939,CIN,PHI
+940,MON,ARI
+941,MON,ARI
+942,MON,ARI
+943,STL,MIL
+944,STL,MIL
+945,STL,MIL
+946,CWS,CHC
+947,CWS,CHC
+948,CWS,CHC
+949,CLE,BAL
+950,CLE,BAL
+951,CLE,BAL
+952,TBD,MIN
+953,TBD,MIN
+954,TBD,MIN
+955,BOS,LAA
+956,BOS,LAA
+957,BOS,LAA
+958,OAK,KC
+959,OAK,KC
+960,OAK,KC
+961,NYY,HOU
+962,NYY,HOU
+963,NYY,HOU
+964,TEX,TOR
+965,TEX,TOR
+966,TEX,TOR
+967,DET,SEA
+968,DET,SEA
+969,DET,SEA
+970,MON,NYM
+971,MON,NYM
+972,MON,NYM
+973,SDP,SFG
+974,SDP,SFG
+975,SDP,SFG
+976,MIL,PHI
+977,MIL,PHI
+978,MIL,PHI
+979,LAD,FLA
+980,LAD,FLA
+981,LAD,FLA
+982,ARI,PIT
+983,ARI,PIT
+984,ARI,PIT
+985,COL,STL
+986,COL,STL
+987,COL,STL
+988,CIN,ATL
+989,CIN,ATL
+990,CIN,ATL
+991,SEA,LAD
+992,SEA,LAD
+993,SEA,LAD
+994,KC,CWS
+995,KC,CWS
+996,KC,CWS
+997,TBD,TOR
+998,TBD,TOR
+999,TBD,TOR
+1000,BAL,BOS
+1001,BAL,BOS
+1002,BAL,BOS
+1003,HOU,LAA
+1004,HOU,LAA
+1005,HOU,LAA
+1006,OAK,TEX
+1007,OAK,TEX
+1008,OAK,TEX
+1009,DET,NYY
+1010,DET,NYY
+1011,DET,NYY
+1012,MIN,CLE
+1013,MIN,CLE
+1014,MIN,CLE
+1015,MON,FLA
+1016,MON,FLA
+1017,MON,FLA
+1018,CIN,PIT
+1019,CIN,PIT
+1020,CIN,PIT
+1021,STL,CHC
+1022,STL,CHC
+1023,STL,CHC
+1024,ARI,SDP
+1025,ARI,SDP
+1026,ARI,SDP
+1027,ATL,MIL
+1028,ATL,MIL
+1029,ATL,MIL
+1030,SFG,COL
+1031,SFG,COL
+1032,SFG,COL
+1033,PHI,NYM
+1034,PHI,NYM
+1035,PHI,NYM
+1036,KC,STL
+1037,KC,STL
+1038,KC,STL
+1039,TOR,BAL
+1040,TOR,BAL
+1041,TOR,BAL
+1042,BOS,TEX
+1043,BOS,TEX
+1044,BOS,TEX
+1045,HOU,OAK
+1046,HOU,OAK
+1047,HOU,OAK
+1048,CLE,MIN
+1049,CLE,MIN
+1050,CLE,MIN
+1051,CWS,DET
+1052,CWS,DET
+1053,CWS,DET
+1054,LAA,SEA
+1055,LAA,SEA
+1056,LAA,SEA
+1057,NYY,TBD
+1058,NYY,TBD
+1059,NYY,TBD
+1060,FLA,MON
+1061,FLA,MON
+1062,FLA,MON
+1063,CIN,CHC
+1064,CIN,CHC
+1065,CIN,CHC
+1066,ATL,PHI
+1067,ATL,PHI
+1068,ATL,PHI
+1069,NYM,SFG
+1070,NYM,SFG
+1071,NYM,SFG
+1072,MIL,PIT
+1073,MIL,PIT
+1074,MIL,PIT
+1075,ARI,COL
+1076,ARI,COL
+1077,ARI,COL
+1078,LAD,SDP
+1079,LAD,SDP
+1080,LAD,SDP
+1081,SDP,LAA
+1082,SDP,LAA
+1083,SDP,LAA
+1084,DET,TOR
+1085,DET,TOR
+1086,DET,TOR
+1087,CWS,KC
+1088,CWS,KC
+1089,CWS,KC
+1090,TBD,NYY
+1091,TBD,NYY
+1092,TBD,NYY
+1093,BOS,BAL
+1094,BOS,BAL
+1095,BOS,BAL
+1096,TEX,SEA
+1097,TEX,SEA
+1098,TEX,SEA
+1099,OAK,HOU
+1100,OAK,HOU
+1101,OAK,HOU
+1102,MIN,CLE
+1103,MIN,CLE
+1104,MIN,CLE
+1105,LAD,ARI
+1106,LAD,ARI
+1107,LAD,ARI
+1108,CIN,MIL
+1109,CIN,MIL
+1110,CIN,MIL
+1111,CHC,ATL
+1112,CHC,ATL
+1113,CHC,ATL
+1114,NYM,MON
+1115,NYM,MON
+1116,NYM,MON
+1117,PIT,STL
+1118,PIT,STL
+1119,PIT,STL
+1120,PHI,FLA
+1121,PHI,FLA
+1122,PHI,FLA
+1123,COL,SFG
+1124,COL,SFG
+1125,COL,SFG
+1126,BAL,ATL
+1127,BAL,ATL
+1128,BAL,ATL
+1129,SEA,CWS
+1130,SEA,CWS
+1131,SEA,CWS
+1132,MIN,DET
+1133,MIN,DET
+1134,MIN,DET
+1135,BOS,TBD
+1136,BOS,TBD
+1137,BOS,TBD
+1138,HOU,OAK
+1139,HOU,OAK
+1140,HOU,OAK
+1141,NYY,TOR
+1142,NYY,TOR
+1143,NYY,TOR
+1144,CLE,KC
+1145,CLE,KC
+1146,CLE,KC
+1147,TEX,LAA
+1148,TEX,LAA
+1149,TEX,LAA
+1150,LAD,COL
+1151,LAD,COL
+1152,LAD,COL
+1153,STL,PIT
+1154,STL,PIT
+1155,STL,PIT
+1156,SDP,CIN
+1157,SDP,CIN
+1158,SDP,CIN
+1159,ARI,SFG
+1160,ARI,SFG
+1161,ARI,SFG
+1162,PHI,MON
+1163,PHI,MON
+1164,PHI,MON
+1165,CHC,MIL
+1166,CHC,MIL
+1167,CHC,MIL
+1168,NYM,FLA
+1169,NYM,FLA
+1170,NYM,FLA
+1171,TEX,COL
+1172,TEX,COL
+1173,TEX,COL
+1174,DET,MIN
+1175,DET,MIN
+1176,DET,MIN
+1177,OAK,LAA
+1178,OAK,LAA
+1179,OAK,LAA
+1180,TOR,TBD
+1181,TOR,TBD
+1182,TOR,TBD
+1183,CWS,BOS
+1184,CWS,BOS
+1185,CWS,BOS
+1186,KC,CLE
+1187,KC,CLE
+1188,KC,CLE
+1189,SEA,HOU
+1190,SEA,HOU
+1191,SEA,HOU
+1192,NYY,BAL
+1193,NYY,BAL
+1194,NYY,BAL
+1195,SFG,LAD
+1196,SFG,LAD
+1197,SFG,LAD
+1198,MIL,CIN
+1199,MIL,CIN
+1200,MIL,CIN
+1201,CHC,NYM
+1202,CHC,NYM
+1203,CHC,NYM
+1204,PIT,STL
+1205,PIT,STL
+1206,PIT,STL
+1207,FLA,PHI
+1208,FLA,PHI
+1209,FLA,PHI
+1210,SDP,ARI
+1211,SDP,ARI
+1212,SDP,ARI
+1213,MON,ATL
+1214,MON,ATL
+1215,MON,ATL`;
+  const map={};
+  raw.split('\n').forEach(line=>{
+    const [num,home,away]=line.trim().split(',');
+    if(num&&home&&away) map[parseInt(num)]={home:normAbbr(home),away:normAbbr(away)};
+  });
+  return map;
+})();
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+checkForSavedGame();
+</script>
+</body>
+</html>
